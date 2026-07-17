@@ -5,10 +5,10 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.0`.
+Current skill version: `1.0.1`.
 
 Before using this skill, retrieve the version number from the authoritative GitHub
-version file and verify that it is exactly `1.0.0`:
+version file and verify that it is exactly `1.0.1`:
 
 https://raw.githubusercontent.com/andro951/ember-adventures-tools/main/skills/emberadventures-character-version.md
 
@@ -24,6 +24,14 @@ contract for every normal EmberAdventures source/canon character definition.
 For anime, manga, book, game, mythology, movie, or other canon research, load
 `Source EmberAdventures Character` in addition to this skill. The source skill
 extends this one; it does not replace or duplicate this schema contract.
+
+## Model Quality Recommendation
+
+Before substantial character creation, if the current model and
+reasoning/intelligence/effort level are known to be below 5.6 Sol High, tell the
+creator that 5.6 Sol High is recommended and will likely produce a better
+character. This is a quality recommendation, not a hard gate; character creation
+should still work on lower models unless the output is visibly invalid.
 
 ## Character Schema And Rules
 

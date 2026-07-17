@@ -5,10 +5,10 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.1`.
+Current skill version: `1.0.2`.
 
 Before using this skill, retrieve the version number from the authoritative GitHub
-version file and verify that it is exactly `1.0.1`:
+version file and verify that it is exactly `1.0.2`:
 
 https://raw.githubusercontent.com/andro951/ember-adventures-tools/main/skills/emberadventures-story-version.md
 
@@ -52,6 +52,25 @@ filesystem-backed Codex version uses a separate campaign packet shape; when the
 user asks for that format, use `original-emberadventures-codex-story` instead of
 forcing one schema into the other. Normal story-template exports do not use a
 `story_engine` or `schema_version` discriminator.
+
+## Model Readiness Check
+
+Before substantial story creation, verify the current model and
+reasoning/intelligence/effort level with the creator when it is not already
+known. The minimum recommended setup for this skill is a thinking model at
+medium effort/intelligence or higher, such as ChatGPT/Codex 5.4 or higher at
+Medium. The optimal setup is 5.6 Sol at High effort/intelligence.
+
+If the current setup is below optimal but still at or above the minimum, stop
+before story design and warn that lower model/intelligence settings may create
+a weaker story, miss long-range structure, or produce an invalid JSON file.
+Suggest increasing to 5.6 Sol High, then continue only if the creator chooses
+to proceed.
+
+If the current setup is below the minimum, stop before story design and say it
+is extremely unlikely to create a valid EmberAdventures story JSON file. Tell
+the creator they probably should not continue until they raise the
+model/intelligence/effort to at least the minimum.
 
 Do not use existing EmberAdventures story files on the user's computer as creation
 references, quality references, structure references, style references, or
@@ -237,27 +256,29 @@ with rollback and choice support.
      decisions while continuing to use this base contract.
    - If the user confirms the story is truly original, continue with
      `source: "Original"`.
-2. Build a premise with a clear playable starting situation, not just lore.
-3. Draft or update the human-readable story design document. Recommend a story
+2. Run the model readiness check and stop or warn as described above before
+   substantial story design.
+3. Build a premise with a clear playable starting situation, not just lore.
+4. Draft or update the human-readable story design document. Recommend a story
    structure type after learning the premise if the user has not chosen one.
-4. Ask for approval or missing information unless the user delegated the design.
-5. Convert the approved design into final story JSON only after the outline,
+5. Ask for approval or missing information unless the user delegated the design.
+6. Convert the approved design into final story JSON only after the outline,
    cast, arc plan, and objective strategy are coherent.
-6. Create or verify required public metadata.
-7. Create a focused starting state with one immediate active objective.
-8. Build a hidden objective spine for the main story.
-9. Add side objectives that fit the premise instead of filler errands.
-10. Add future cast only when it improves play; keep locked future entries hidden.
-11. Build a useful world map with starting locations and unlockable future areas.
-12. Write a vivid opening message that preserves player agency.
-13. Run the progression design pass before final JSON:
+7. Create or verify required public metadata.
+8. Create a focused starting state with one immediate active objective.
+9. Build a hidden objective spine for the main story.
+10. Add side objectives that fit the premise instead of filler errands.
+11. Add future cast only when it improves play; keep locked future entries hidden.
+12. Build a useful world map with starting locations and unlockable future areas.
+13. Write a vivid opening message that preserves player agency.
+14. Run the progression design pass before final JSON:
     - define the current starting state;
     - define the hidden future state the story can reach;
     - define which objective rewards update state, rules, map locations, scene
       lists, character fields, images, items, and future-cast availability;
     - define which `story_rules` are active at start and which objectives add,
       replace, or remove them.
-14. Run the feature-utilization pass. For every serious story, explicitly
+15. Run the feature-utilization pass. For every serious story, explicitly
     decide whether the story should use `state.players`, `story_rules`,
     `future_cast`, map unlocks, branch/exclusive objectives, relationship/stat
     rewards, `set_state_field`, `add_story_rule`, `remove_story_rule`,
