@@ -1,4 +1,0 @@
-interface:
-  display_name: "EmberAdventures Character"
-  short_description: "Create and validate normal character JSON"
-  default_prompt: "Use $emberadventures-character to design, review, repair, or generate normal EmberAdventures character JSON."
