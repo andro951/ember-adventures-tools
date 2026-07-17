@@ -5,10 +5,10 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.2`.
+Current skill version: `1.0.3`.
 
 Before using this skill, retrieve the version number from the authoritative GitHub
-version file and verify that it is exactly `1.0.2`:
+version file and verify that it is exactly `1.0.3`:
 
 https://raw.githubusercontent.com/andro951/ember-adventures-tools/main/skills/emberadventures-story-version.md
 
@@ -71,6 +71,56 @@ If the current setup is below the minimum, stop before story design and say it
 is extremely unlikely to create a valid EmberAdventures story JSON file. Tell
 the creator they probably should not continue until they raise the
 model/intelligence/effort to at least the minimum.
+
+## Story File Storage Check
+
+Before substantial story design, ask where the creator wants to keep the story
+files while work is in progress. Explain the tradeoff clearly:
+
+- ChatGPT local storage is the default and requires no setup, but the creator
+  cannot directly browse or edit those files. Provide download links whenever
+  the creator wants to inspect, save, or move the current design document,
+  notes, or JSON file.
+- Google Drive is usually best for nontechnical creators because the creator
+  can directly view, edit, organize, and share the files.
+- GitHub is best for creators who want version history or are comfortable with
+  repos. Use one stories repo, not one repo per story.
+- Another shared folder service is acceptable if the creator already uses it.
+
+Ask: "Where would you like to keep the story files while we work? The default
+is ChatGPT local storage, but those files are not directly viewable by you
+unless I provide download links. Better options are Google Drive, GitHub, or
+another shared folder. Would you like help setting up Google Drive or a GitHub
+stories repo?"
+
+If the creator chooses Google Drive, help create or use this structure:
+
+```text
+Ember Adventures Stories/
+  Stories/
+    Story Name.json
+  Design/
+    Story Name/
+      Story Name - Design Document.md
+      Story Name - Notes.md
+```
+
+If the creator chooses GitHub, help create or use one stories repository with
+this structure:
+
+```text
+ember-adventures-stories/
+  stories/
+    Story Name.json
+  design/
+    Story Name/
+      Story Name - Design Document.md
+      Story Name - Notes.md
+```
+
+If the creator skips setup or says to continue, use ChatGPT local storage and
+provide download links at major checkpoints: first design document draft,
+objective/arc plan, and final playable JSON.
 
 Do not use existing EmberAdventures story files on the user's computer as creation
 references, quality references, structure references, style references, or
@@ -258,27 +308,29 @@ with rollback and choice support.
      `source: "Original"`.
 2. Run the model readiness check and stop or warn as described above before
    substantial story design.
-3. Build a premise with a clear playable starting situation, not just lore.
-4. Draft or update the human-readable story design document. Recommend a story
+3. Run the story file storage check and help with Google Drive or GitHub setup
+   when the creator wants shared storage.
+4. Build a premise with a clear playable starting situation, not just lore.
+5. Draft or update the human-readable story design document. Recommend a story
    structure type after learning the premise if the user has not chosen one.
-5. Ask for approval or missing information unless the user delegated the design.
-6. Convert the approved design into final story JSON only after the outline,
+6. Ask for approval or missing information unless the user delegated the design.
+7. Convert the approved design into final story JSON only after the outline,
    cast, arc plan, and objective strategy are coherent.
-7. Create or verify required public metadata.
-8. Create a focused starting state with one immediate active objective.
-9. Build a hidden objective spine for the main story.
-10. Add side objectives that fit the premise instead of filler errands.
-11. Add future cast only when it improves play; keep locked future entries hidden.
-12. Build a useful world map with starting locations and unlockable future areas.
-13. Write a vivid opening message that preserves player agency.
-14. Run the progression design pass before final JSON:
+8. Create or verify required public metadata.
+9. Create a focused starting state with one immediate active objective.
+10. Build a hidden objective spine for the main story.
+11. Add side objectives that fit the premise instead of filler errands.
+12. Add future cast only when it improves play; keep locked future entries hidden.
+13. Build a useful world map with starting locations and unlockable future areas.
+14. Write a vivid opening message that preserves player agency.
+15. Run the progression design pass before final JSON:
     - define the current starting state;
     - define the hidden future state the story can reach;
     - define which objective rewards update state, rules, map locations, scene
       lists, character fields, images, items, and future-cast availability;
     - define which `story_rules` are active at start and which objectives add,
       replace, or remove them.
-15. Run the feature-utilization pass. For every serious story, explicitly
+16. Run the feature-utilization pass. For every serious story, explicitly
     decide whether the story should use `state.players`, `story_rules`,
     `future_cast`, map unlocks, branch/exclusive objectives, relationship/stat
     rewards, `set_state_field`, `add_story_rule`, `remove_story_rule`,
