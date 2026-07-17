@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.4`.
+Current skill version: `1.0.5`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -188,6 +188,26 @@ story details:
   branch consequences, and endings.
 - Offer to recommend a structure after hearing the premise instead of forcing
   the user to choose from every story type up front.
+
+When discussing story pacing, use these creator-facing names:
+
+- Player-Paced Story: the player chooses when to pursue the main plot. Use
+  `story_pacing.mode: "player_controlled"`.
+- Time-Controlled Story: recommended for most guided main plots. Main-story
+  events are scheduled or triggered by prior objectives, but the schedule
+  deliberately includes gaps where the player can explore, shop, work jobs,
+  romance, train, rest, or pursue side objectives. Use
+  `story_pacing.mode: "time_controlled"`.
+- Strict Time-Controlled Story: special-case pacing for urgent sequences where
+  main objectives happen back-to-back and side objectives/jobs should not be
+  available until the sequence ends. This is a restrictive subtype of
+  `time_controlled`, not the default recommendation.
+
+Do not call the recommended middle option "hybrid"; call it Time-Controlled
+Story and explain that its downtime is intentional. Do not describe normal
+time-controlled pacing as having no gaps. If the creator is unsure, recommend
+Time-Controlled Story with meaningful downtime unless the premise is a pure
+sandbox or a tightly scripted crisis.
 
 Before drafting final JSON, decide which mode the task is in:
 
@@ -2063,11 +2083,16 @@ For time-controlled stories:
 - Make every main story objective before final aftermath/freeplay
   `time_locked` and `locked_until_complete`.
 - Create downtime by spacing scheduled events or objective-triggered future
-  events.
+  events. This is the normal recommended form of time-controlled pacing because
+  it lets players explore, shop, do jobs, rest, and pursue side objectives
+  between main story events.
 - Use wait prompts when the next event is ready but the player has not started
   it.
 - Author missed-event consequences when overlapping events intentionally force
   the player to miss one.
+- Use strict time-controlled pacing only for urgent arcs where side content
+  should be unavailable, such as battles, escapes, trials, disasters, or
+  consecutive endgame set pieces.
 
 For choice-heavy / Choices-like stories:
 
@@ -3611,15 +3636,22 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   entirely by player-selected objectives.
 
 - `story_pacing.mode`:
-  - `"player_controlled"`: default. Main story objectives are available,
-    selected, and completed through ordinary objective flow. Do not schedule
-    main story milestones with time.
-  - `"time_controlled"`: the main story has authored events that begin at
-    story-clock times or after prerequisite objectives. The player may spend
-    downtime on side objectives, shops, jobs, travel, and exploration, then use
-    the timeline prompt to wait for the next main event. In this mode, main
-    story objectives are time-controlled commitments, not ordinary swappable
-    guidance.
+  - `"player_controlled"`: creator-facing name Player-Paced Story. Main story
+    objectives are available, selected, and completed through ordinary
+    objective flow. Do not schedule main story milestones with time.
+  - `"time_controlled"`: creator-facing name Time-Controlled Story. The main
+    story has authored events that begin at story-clock times or after
+    prerequisite objectives. The recommended form includes intentional downtime
+    between main events so the player may spend time on side objectives, shops,
+    jobs, travel, and exploration, then use the timeline prompt to wait for the
+    next main event. In this mode, main story objectives are time-controlled
+    commitments, not ordinary swappable guidance.
+
+- Strict Time-Controlled Story is not a separate `story_pacing.mode`; implement
+  it with `"time_controlled"` plus back-to-back timeline events and
+  time-locked objectives where side objectives/jobs are unavailable until the
+  urgent sequence ends. Use it sparingly for scenes that should feel
+  intentionally restrictive.
 
 - `story_pacing.timeline`: Object keyed by stable event id. Timeline entries
   are for main-story events that should happen at a meaningful time. They are
@@ -3681,9 +3713,11 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   missed. Author `missed_due_to_conflict` consequences so the world changes
   coherently instead of silently ignoring the missed event.
 
-- Use `time_controlled` pacing only when the story truly benefits from pressure,
-  downtime, and scheduled set-piece events. If the player should decide when to
-  pursue the main plot, keep the story `player_controlled`.
+- Use `time_controlled` pacing when the story benefits from pressure, downtime,
+  and scheduled set-piece events. Prefer Time-Controlled Story with deliberate
+  gaps over Strict Time-Controlled Story for most guided stories. If the player
+  should decide when to pursue the main plot, keep the story
+  `player_controlled`.
 
 - Example:
 
