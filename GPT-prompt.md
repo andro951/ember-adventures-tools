@@ -1,5 +1,3 @@
-# EmberAdventures Story Prompt
-
 I want to create an EmberAdventures story.
 
 Read the README in this repository first:
