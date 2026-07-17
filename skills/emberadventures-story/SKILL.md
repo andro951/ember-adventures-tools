@@ -5,10 +5,10 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.0`.
+Current skill version: `1.0.1`.
 
 Before using this skill, retrieve the version number from the authoritative GitHub
-version file and verify that it is exactly `1.0.0`:
+version file and verify that it is exactly `1.0.1`:
 
 https://raw.githubusercontent.com/andro951/ember-adventures-tools/main/skills/emberadventures-story-version.md
 
@@ -96,6 +96,25 @@ Lead the creative process until the user's vision is clear. Then become an
 expert creative partner that expands and improves that vision without changing
 its core fantasy.
 
+If this is a brand-new story-creation thread or the user has not made an
+EmberAdventures story before, begin with a short orientation before asking for
+story details:
+
+- Explain that the user is designing a playable story framework, not writing
+  every line of narration and dialogue like a book.
+- Explain that objectives, choices, rules, cast, locations, rewards, shops,
+  jobs, and state changes tell EmberAdventures what the story is and how it can
+  progress; the live AI writes most moment-to-moment narration during play.
+- Explain that the user may specify exact phrases or key dialogue for important
+  moments, but they normally should not script full scenes unless they want a
+  very tight story beat.
+- Explain that EmberAdventures stories are more open-ended than books or
+  traditional Choices-style games by default, but can become more Choices-like
+  through explicit choice objectives, tight objective chains, locked scenes,
+  branch consequences, and endings.
+- Offer to recommend a structure after hearing the premise instead of forcing
+  the user to choose from every story type up front.
+
 Before drafting final JSON, decide which mode the task is in:
 
 - Interviewer mode: the user gave only a loose idea, genre, kink, premise, or
@@ -137,12 +156,39 @@ Ask the questions that make the story unique:
 - If NSFW, is sexual content a central fantasy, an optional reward, a romantic
   payoff, a danger/temptation, or mostly background spice?
 
-Before writing objectives for a serious story, produce a compact internal
-outline with the premise, player fantasy, emotional targets, world hook,
-beginning, midpoint or reevaluation moment, climax, ending choices or postgame,
-progression/building axis, key relationship arcs, and intended story structure
-mode. If the user is available and has not delegated the design, ask whether to
-change the outline before final JSON.
+For substantial stories, the main work product during creation should be a
+human-readable story design document, not immediate JSON. Build and revise that
+document first, then convert it to JSON only at the end when the user approves
+or delegates the final conversion. The design document should be organized so a
+human can read it easily and an AI can convert it reliably:
+
+- premise and player fantasy;
+- intended story structure and pacing model;
+- player options and starting state;
+- main cast, future cast, important NPCs, and relationship arcs;
+- world rules, common knowledge, hidden truths, currencies, shops, jobs, and
+  important resources;
+- locations and unlockable locations;
+- arcs, arc steps, likely objectives, and expected freedom/tightness for each
+  part;
+- choice points, hidden outcome routing, durable consequences, endings, and
+  failure states;
+- image guidance and important visual moments;
+- notes from the user and unresolved decisions.
+
+Before writing objectives for a serious story, produce a compact plot outline
+or story design document with the premise, player fantasy, emotional targets,
+world hook, beginning, midpoint or reevaluation moment, climax, ending choices
+or postgame, progression/building axis, key relationship arcs, intended story
+structure mode, and objective/arc plan. Show the user what is known so far,
+clearly list missing decisions, and ask focused questions. Always allow the
+user to skip questions by saying something like "you decide"; then make strong
+story choices yourself instead of blocking indefinitely.
+
+Use approval checkpoints for major work: premise/structure, cast/player
+options, plot outline, objective/arc breakdown, and final conversion. If the
+user explicitly asks to skip approvals or delegates the design, continue without
+stopping but still keep an internal design outline before JSON.
 
 Treat the story template as the director and EmberAdventures's live AI as the scene
 writer. The live AI is good at moment-to-moment prose but weak at long-term
@@ -192,27 +238,26 @@ with rollback and choice support.
    - If the user confirms the story is truly original, continue with
      `source: "Original"`.
 2. Build a premise with a clear playable starting situation, not just lore.
-   Ask whether this should be a Telltale-style branching story that focuses on
-   direct choices and multiple endings, or a simpler linear/mostly-linear
-   story, unless the user already specified the structure. If interaction is
-   unavailable or the user explicitly asked for no questions, infer from the
-   premise and note the chosen structure in your planning notes, not in the
-   story JSON.
-3. Create or verify required public metadata.
-4. Create a focused starting state with one immediate active objective.
-5. Build a hidden objective spine for the main story.
-6. Add side objectives that fit the premise instead of filler errands.
-7. Add future cast only when it improves play; keep locked future entries hidden.
-8. Build a useful world map with starting locations and unlockable future areas.
-9. Write a vivid opening message that preserves player agency.
-10. Run the progression design pass before final JSON:
+3. Draft or update the human-readable story design document. Recommend a story
+   structure type after learning the premise if the user has not chosen one.
+4. Ask for approval or missing information unless the user delegated the design.
+5. Convert the approved design into final story JSON only after the outline,
+   cast, arc plan, and objective strategy are coherent.
+6. Create or verify required public metadata.
+7. Create a focused starting state with one immediate active objective.
+8. Build a hidden objective spine for the main story.
+9. Add side objectives that fit the premise instead of filler errands.
+10. Add future cast only when it improves play; keep locked future entries hidden.
+11. Build a useful world map with starting locations and unlockable future areas.
+12. Write a vivid opening message that preserves player agency.
+13. Run the progression design pass before final JSON:
     - define the current starting state;
     - define the hidden future state the story can reach;
     - define which objective rewards update state, rules, map locations, scene
       lists, character fields, images, items, and future-cast availability;
     - define which `story_rules` are active at start and which objectives add,
       replace, or remove them.
-11. Run the feature-utilization pass. For every serious story, explicitly
+14. Run the feature-utilization pass. For every serious story, explicitly
     decide whether the story should use `state.players`, `story_rules`,
     `future_cast`, map unlocks, branch/exclusive objectives, relationship/stat
     rewards, `set_state_field`, `add_story_rule`, `remove_story_rule`,
@@ -1842,11 +1887,29 @@ story outcomes when they are intentional and supported by rollback/choice flow.
 Before drafting objectives, ask whether the story should be one of these modes
 unless the user already specified the structure:
 
+- Open adventure: a clear main direction with significant freedom, broad side
+  objectives, exploration, jobs, shops, and AI-adapted connective play.
+- Guided story: a strong main objective chain with open interludes and optional
+  side arcs between authored story beats.
+- Time-controlled story: main events are scheduled, time-locked, and separated
+  by downtime gaps where the player may explore or pursue side content.
+- Choice-heavy / Choices-like: direct player choice menus, mutually exclusive
+  routes, hidden outcome logic, branch consequences, and multiple endings.
+- Sandbox: world setup, systems, recurring loops, locations, jobs, shops, and
+  emergent objectives with little or optional fixed plot.
+- Relationship-focused: objectives primarily develop trust, affection, desire,
+  rivalry, dependency, loyalty, betrayal, repair, or other character arcs.
 - Telltale-style branching: direct player choice menus, mutually exclusive
   routes, hidden outcome logic, failure/death branches when appropriate, and
   multiple endings.
 - Linear/mostly-linear: one strong objective spine with bridge objectives,
   side arcs, and occasional real choices only when they materially change play.
+
+If the user does not know which mode they want, do not dump every option as a
+blocking questionnaire. Ask a few story-intent questions, then recommend one to
+three suitable modes with a short reason. The user may choose one, blend them,
+or say "you decide"; if they delegate, choose the structure that best serves the
+premise and explain the practical result briefly.
 
 If interaction is unavailable or the user explicitly asked for no questions,
 infer from the premise. Moral dilemmas, dark romance agency choices, faction
@@ -1857,6 +1920,116 @@ better as linear/mostly-linear stories.
 
 Do not encode the structure mode as visible story content or a JSON field. It
 is an authoring choice.
+
+### Internal Story-Structure Lenses
+
+Use story theory as an internal planning tool, not as homework for the user.
+After understanding the premise, quietly check whether any of these lenses
+would improve pacing, objective order, or relationship payoff. Use one, blend
+several, or ignore them when they do not fit. Tell the user the practical story
+shape, not the theory label, unless the label helps discussion.
+
+- Hero's journey: ordinary situation, call/displacement, mentor/allies, trials,
+  midpoint revelation, major test/loss, transformation, final ordeal, aftermath.
+- Three-act structure: setup, confrontation/escalation, resolution.
+- Five-act escalation: setup, rising complications, midpoint turn, crisis,
+  climax, aftermath.
+- Mystery/investigation: hook, clue chains, suspects, false leads, reveals,
+  confrontation, truth/consequence.
+- Romance/relationship arc: first impression, friction, shared task, trust,
+  vulnerability, rupture/test, repair/commitment or changed distance.
+- Faction/political arc: factions, leverage, public events, private bargains,
+  betrayals, reputation shifts, power change.
+- Open-world hub-and-spoke: hub, optional spokes, gated main milestones, world
+  state changes, return-to-hub consequences.
+- Countdown/crisis: visible pressure, limited windows, tradeoffs, missed-event
+  consequences, decisive intervention or failure.
+- Corruption/temptation: offer, compromise, benefit, consequence, point of no
+  return or resistance.
+- Redemption: harm/guilt, denial, consequence, restitution, sacrifice, earned
+  trust.
+- Tournament/trial ladder: repeated tests, rival development, rising stakes,
+  rule changes, final trial.
+- Survival/escalation: scarcity, danger, adaptation, loss, escape/conquest.
+
+### Structure-Specific Objective Patterns
+
+These are helper patterns, not rules the story must obey. Objective trees should
+be structured to follow the story's intent and make the experience feel the way
+the creator wants. Use, modify, combine, or ignore these patterns when a better
+objective tree fits the story.
+
+For open adventure:
+
+- Start with one clear main objective that gives direction without locking the
+  player into a narrow path.
+- Add broad side objectives, rumors, shops, jobs, locations, and NPC goals.
+- Use discovery, travel, investigation, relationship, and resource objectives
+  to let the player choose how to engage.
+- Avoid too many locked objectives; use state, memories, story rules, and
+  hidden outcome routes to adapt to the player's direction.
+
+For guided story:
+
+- Build a main objective chain with meaningful bridge objectives between major
+  beats.
+- Use tight objective clusters for authored scenes such as meetings, dinners,
+  political sessions, discoveries, fights, or relationship development.
+- Insert freeform interludes after tight clusters so the player can talk,
+  explore, shop, train, rest, or pursue side content.
+- Unlock side objectives and relationship scenes from main milestones.
+
+For time-controlled stories:
+
+- Put main story events in `story_pacing.timeline`.
+- Make every main story objective before final aftermath/freeplay
+  `time_locked` and `locked_until_complete`.
+- Create downtime by spacing scheduled events or objective-triggered future
+  events.
+- Use wait prompts when the next event is ready but the player has not started
+  it.
+- Author missed-event consequences when overlapping events intentionally force
+  the player to miss one.
+
+For choice-heavy / Choices-like stories:
+
+- Use explicit `completion_control: "choice"` owner objectives for moments
+  where the player knowingly chooses.
+- Keep option titles and summaries non-spoilery; hide route labels and hidden
+  outcomes.
+- Apply durable consequences through relationship rewards, story rules,
+  inventory/resources, future-cast changes, map changes, deaths, endings, or
+  state-field updates.
+- Use branch-and-bottleneck structure to prevent impossible content explosion:
+  choices change state and later scenes, but major milestones may reconverge.
+
+For sandbox stories:
+
+- Prioritize locations, systems, recurring jobs, shops, social loops, rumors,
+  factions, and reusable objectives.
+- Keep the main plot light, optional, or generated from player action unless
+  the user asks for a stronger spine.
+- Use broad hub objectives and rotating/renewable side content.
+- Let player behavior create new objectives through state changes and story
+  memory instead of relying on a fixed chapter chain.
+
+For relationship-focused stories:
+
+- Build objective chains around shared tasks, private conversations, trust
+  tests, vulnerability, jealousy, boundaries, conflict, repair, intimacy, or
+  loyalty.
+- Track durable relationship changes with deterministic rewards; do not rely
+  only on narrator prose.
+- Use tight clusters for emotional scenes, then open space afterward for
+  player reaction and follow-up.
+- Store promises, fears, avoided topics, favorite memories, and changed
+  boundaries in durable state when they matter later.
+
+Useful objective purposes include discovery, travel, conversation/teaching,
+trust-building, explicit choice, hidden AI route, training, shop/job/resource
+loop, crisis, aftermath, hub/freeform interlude, faction move, relationship
+repair, and ending/freeplay transition. Do not force these labels into JSON
+unless the normal objective fields need them; they are planning aids.
 
 For Telltale-style stories:
 
