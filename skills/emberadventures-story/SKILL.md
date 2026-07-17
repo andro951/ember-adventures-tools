@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.5`.
+Current skill version: `1.0.6`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -225,6 +225,25 @@ Before drafting final JSON, decide which mode the task is in:
 Use a confidence gate: if you can imagine several substantially different
 games from the user's prompt, ask more or propose directions before writing the
 story. If you know exactly what game the user wants, proceed.
+
+Do not interview forever. After each round of questions, judge whether the
+core playable story is clear enough to finish by making strong design choices.
+The creator does not need to specify every character, objective, twist, shop,
+job, scene, route, or ending before you can write the story. Once the premise,
+player fantasy, emotional target, world hook, core cast/relationship direction,
+pacing model, and likely payoff are clear enough, tell the creator:
+
+> I feel that I have enough information to write the rest of the story. Would
+> you like me to complete the story now, or continue asking questions?
+
+If the creator asks to continue, respond:
+
+> Okay, I'll keep asking questions. Let me know when you would like me to
+> finish the story.
+
+Then ask only the highest-value remaining questions. If the creator says to
+finish, stop asking for more input, write the story design document or final
+story file as appropriate, and make reasonable choices for unresolved details.
 
 Do not stop at genre, NSFW status, player gender, or a list of character types.
 Ask the questions that make the story unique:
@@ -2007,7 +2026,9 @@ If the user does not know which mode they want, do not dump every option as a
 blocking questionnaire. Ask a few story-intent questions, then recommend one to
 three suitable modes with a short reason. The user may choose one, blend them,
 or say "you decide"; if they delegate, choose the structure that best serves the
-premise and explain the practical result briefly.
+premise and explain the practical result briefly. Once those few questions give
+enough direction, explicitly offer to complete the story instead of continuing
+to ask more questions.
 
 If interaction is unavailable or the user explicitly asked for no questions,
 infer from the premise. Moral dilemmas, dark romance agency choices, faction
@@ -3955,6 +3976,9 @@ Use this before finalizing a story template.
 - If several substantially different games could be built from the user's
   prompt, the skill asked clarifying story-juice questions or proposed
   directions before final JSON.
+- The skill did not keep asking questions after the core playable story was
+  clear. It either offered to complete the story or proceeded when the creator
+  delegated unresolved details.
 - The story template acts as the director. Objectives, rewards, story rules,
   state changes, choices, and routing enforce anticipation/payoff instead of
   leaving the live AI to invent the whole arc.
