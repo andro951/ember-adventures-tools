@@ -6,26 +6,27 @@ characters and story templates:
 - `emberadventures-character/`
 - `emberadventures-story/`
 
-## Which skills to download
+## Which skill files to use
 
 ### EmberAdventures Character
 
-Download `emberadventures-character/` when you want to create, revise, review,
-repair, or validate an EmberAdventures character definition. It is the base
-character schema and is also needed whenever a story contains player characters,
-party members, or NPCs.
+Use `emberadventures-character/` when you want to create, revise, review,
+repair, or validate an EmberAdventures character definition. In ChatGPT, copy,
+paste, upload, or otherwise provide the skill files as ordinary instruction
+documents. In Codex, install or load the skill folder as a Codex skill when it
+is not already installed.
 
 ### EmberAdventures Story
 
-Download `emberadventures-story/` when you want to create, revise, migrate,
-review, or validate an EmberAdventures story template. The Story skill depends
-on the Character skill for character definitions, so download both folders when
-working with stories. The Story skill should be loaded after the Character skill
-when both are available.
+Use `emberadventures-story/` when you want to create, revise, migrate, review,
+or validate an EmberAdventures story template. The Story skill depends on the
+Character skill for character definitions, so provide both skill folders when
+working with stories. In ChatGPT, treat them as reference/instruction files. In
+Codex, install or load them as Codex skills when they are not already installed.
 
 ### Quick guide
 
-| Goal | Skills to download |
+| Goal | Skill files to use |
 | --- | --- |
 | Create or review a character | `emberadventures-character` |
 | Create or review a story | `emberadventures-character` and `emberadventures-story` |
@@ -45,10 +46,11 @@ Each skill has a sibling version file:
 - `emberadventures-character-version.md`
 - `emberadventures-story-version.md`
 
-Before using either skill, check its version file on GitHub. If the version is
-newer than the local skill, download the matching skill folder from this
-repository and replace the local copy before continuing. The version files are
-deliberately plain text so they are easy for an AI or setup script to retrieve.
+For ordinary story or character creation, do not start by checking versions or
+replacing local files. Use the skill files already provided to the current AI
+session. Version checks are for maintenance tasks where the user explicitly asks
+to update or verify skill currency. The version files are deliberately plain
+text so they are easy for a setup script or maintainer to retrieve.
 
 ## Keeping a local copy current
 

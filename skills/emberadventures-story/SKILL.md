@@ -5,16 +5,21 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.3`.
+Current skill version: `1.0.4`.
 
-Before using this skill, retrieve the version number from the authoritative GitHub
-version file and verify that it is exactly `1.0.3`:
+For ordinary story creation, review, repair, or migration, use the installed
+skill text as the active instructions. Do not interrupt the creator workflow to
+download, install, clone, replace, or update skills unless the user explicitly
+asks to update or verify skill currency.
+
+For maintenance only, the authoritative GitHub version file is:
 
 https://raw.githubusercontent.com/andro951/ember-adventures-tools/main/skills/emberadventures-story-version.md
 
-If the retrieved version differs from the local version, pull the current
-`emberadventures-story` skill folder from GitHub, replace the local copy,
-and then continue with the user's job. Do not silently use a stale local copy.
+If the user explicitly asks to update skills and the retrieved version differs
+from the local version, pull the current `emberadventures-story` skill folder
+from GitHub, replace the local copy, and then continue with the user's job. Do
+not silently use a stale local copy.
 
 # EmberAdventures Story
 
