@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.6`.
+Current skill version: `1.0.7`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -953,10 +953,10 @@ are one-time content: after acceptance/completion they should not rotate back
 in like generic jobs. Use requirements such as
 `story_inventory.adventurer_rank >= 1`, `story_inventory.credits >= 200`, or a
 story-specific inventory flag to control when they unlock. Do not write job or
-shop requirements as `{ "path": "story_rules", "op": "includes", ... }`
-because `story_rules` is an array of rule objects, not a plain id array; mirror
-unlock gates into `story_inventory` flags/lists with objective rewards when a
-UI requirement needs an `includes` check.
+shop requirements as path/list scans against `story_rules`; use
+`{ "type": "story_rule", "id": "rule-id" }` for rule gates, or mirror unlock
+gates into `story_inventory` flags/lists with objective rewards when the UI
+needs a resource/list requirement.
 
 Generic jobs are EmberAdventures's fallback rotating jobs. They have genre labels on
 the engine pool entries and are eligible only when all of those labels are
@@ -1159,9 +1159,9 @@ player has already visibly earned that knowledge.
   completion plus `route_control: "ai"`; once completion is proven, the same
   verifier classifies the full scene into exactly one private authored outcome.
   Outcome-route `requirements` are hard eligibility filters. Only eligible
-  routes are shown to the classifier. Always include one `fallback: true` route
-  whose requirements are empty or easy to satisfy so completed objectives still
-  have a valid ambiguous/neutral route.
+  routes are shown to the classifier. Always include exactly one
+  `fallback: true` or `default: true` route with no requirements so completed
+  objectives always have a valid ambiguous/neutral/default route.
 - EmberAdventures checks one selected objective at a time. Do not design chains that
   expect one player message to complete multiple consecutive objectives. Use
   larger scene-scale objectives or bridge objectives instead.
@@ -1465,9 +1465,9 @@ Before finishing:
   story-state-based, and any default fallback is last.
 - Scene-adjudicated hidden routing uses `route_control: "ai"` and
   `outcome_routes`, never a fake visible choice. Route ids and criteria are
-  private, route ids are unique, exactly one route is the fallback, every route
-  has a valid next objective or `terminal: true`, and the objective does not
-  also contain `next_objectives`.
+  private, route ids are unique, exactly one route is the no-requirements
+  fallback/default, every route has a valid next objective or `terminal: true`,
+  and the objective does not also contain `next_objectives`.
 - Visual tree integrity is valid: every objective id is unique, every
   `requires` id exists, every `next_objectives[].objective_id` exists, direct
   choice objectives have owned `choices[]`, choice options have visible titles
@@ -2634,6 +2634,17 @@ For threshold-gated choices, requirements should be visible player-facing
 requirements, not secret alternate objective text. If the option exists, show it
 and let the game mark it unavailable until the requirement is met.
 
+Player choice options and AI hidden routes use the same structured requirement
+contract, but they resolve differently:
+
+- Direct player choices are visible. Do not hide an option just because its
+  requirements are unmet; the UI should show the locked option and its visible
+  requirements. Every direct choice objective must include at least one option
+  with no requirements so the player is never trapped.
+- Hidden AI routes are private. Requirements filter which route ids the
+  classifier is allowed to see. Ineligible route ids, criteria, rewards, and
+  requirements must not be shown to the player.
+
 For direct forced choices, create one visible owner objective with internal
 options:
 
@@ -2801,6 +2812,20 @@ Use this for ally/neutral/hostile judgments, clean/costly/failed combat results,
 concealed/partial/open revelations, recruitment states, and relationship
 consequences inferred from natural play.
 
+Route requirements use the same structured requirement contract as visible
+choice/shop/job requirements. Use hard requirements only for facts that make a
+route truly possible or impossible:
+
+```json
+{ "path": "story_inventory.adventurer_rank", "op": ">=", "value": 2 }
+{ "type": "story_rule", "id": "mara-is-bound-by-first-law" }
+{ "type": "known_fact", "target": "Mara Venn", "id": "mara-trusts-player" }
+{ "type": "party_member", "character": "Mara Venn" }
+{ "type": "character_alive", "character": "Mara Venn" }
+{ "type": "character_dead", "character": "Bandit Captain" }
+{ "type": "currency", "id": "coins", "op": ">=", "value": 120 }
+```
+
 Rules:
 
 - If the player is knowingly choosing from clearly presented options, use a
@@ -2822,6 +2847,11 @@ Rules:
   or ambiguous result and is used when no more specific criterion is a better
   match or when model output is unusable. It does not prevent a non-fallback
   route from winning whenever that route better fits the scene.
+- If the route should be hidden unless every specific route is ineligible, use
+  `default: true` or `fallback: true` with
+  `default_mode: "only_if_no_other_eligible"`. This is useful for true
+  zero-specific-match defaults, not for ordinary ambiguity between eligible
+  routes.
 - Outcome ids, criteria, requirements, route labels, and unchosen outcomes are
   private. Never expose them in objective titles, summaries, choice menus,
   narration, completion messages, hints, or visible reward descriptions.
@@ -2842,7 +2872,8 @@ Rules:
   structured requirements, and any needed default path is last.
 - Every AI outcome route has a unique id, private criteria, deterministic reward
   objects, and an existing `next_objective_id` or `terminal: true`. Exactly one
-  route is the fallback. AI-routed objectives do not also use `next_objectives`.
+  route is the no-requirements fallback/default. AI-routed objectives do not
+  also use `next_objectives`.
 - Every future-character reward references `future_cast.items[id]`, where
   `id` is the exact future-cast object key and the entry's own `id`.
 - The active opening objective is actionable in the starting scene.
@@ -3430,8 +3461,9 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   `route_control: "ai"`. Each route has a unique stable `id`, private
   `criteria`, optional structured `requirements` used as hard eligibility
   filters, deterministic `rewards`, and `next_objective_id`.
-  Exactly one route has `fallback: true`. A route may omit its next objective
-  only when it declares `terminal: true`. The runtime records
+  Exactly one route has `fallback: true` or `default: true`, and that route
+  must have no requirements. A route may omit its next objective only when it
+  declares `terminal: true`. The runtime records
   `selected_outcome_id` privately and applies base plus selected-route rewards
   once. Authors must not prefill runtime selection fields.
 
@@ -3465,7 +3497,7 @@ Supported deterministic objective rewards include: `introduce_future_character`,
 
 - Objective `choices`: Array used only when `completion_control` is `"choice"`.
   Each choice item should have `id`, `title`, `summary`, `rewards`, and
-  optional `effects`. These are the options shown in the forced choice UI; they
+  optional `effects` and `requirements`. These are the options shown in the forced choice UI; they
   are not top-level objectives and should not appear in the normal objective
   list. For major branch choices, use player-facing `summary` only for
   non-spoilery clarification of what the option means in the current scene, and
@@ -3480,7 +3512,7 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   6`, `suspicion +1`, and `requires cellar key`.
   Auto mode may complete choice objectives without opening the UI. Unless every
   option is intentionally fatal or ending-only, provide at least one selectable
-  continuation option that keeps the story moving. Put the safest/neutral
+  continuation option with no requirements that keeps the story moving. Put the safest/neutral
   continuation first, or add `auto_preferred: true` to the preferred auto path.
 
 - Objective `completion_message`: Optional completion message string. Use `""` if not needed.
@@ -3573,14 +3605,16 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   Structured requirements use objects such as
   `{ "path": "story_inventory.coins", "op": ">=", "value": 120 }`.
   Supported operators are `>=`, `>`, `<=`, `<`, `==`, `!=`, `truthy`, `falsy`,
-  `includes`, and `not_includes`.
-  Do not target `story_rules` with `includes`/`not_includes` requirements:
-  `story_rules` is an array of objects, so those checks do not match rule ids.
-  For UI gates, mirror story progression into a simple `story_inventory` flag
-  or list value and point requirements at that field instead. When using a
-  mirrored list such as `story_inventory.rule_flags`, verify every required
-  value is reachable from starting state or from an objective reward such as
-  `add_state_list_item`.
+  `includes`, and `not_includes`. For common story conditions, prefer explicit
+  typed requirements instead of fragile path/list checks:
+  `{ "type": "story_rule", "id": "rule-id" }`,
+  `{ "type": "known_fact", "target": "Character Name", "id": "fact-id" }`,
+  `{ "type": "party_member", "character": "Character Name" }`,
+  `{ "type": "character_alive", "character": "Character Name" }`,
+  `{ "type": "character_dead", "character": "Character Name" }`, and
+  `{ "type": "currency", "id": "coins", "op": ">=", "value": 120 }`.
+  Use direct path requirements for concrete `story_inventory`, `world_flags`,
+  player, character, NPC, or map fields when a typed shortcut does not exist.
   For numeric resource rewards or costs, use `adjust_story_inventory` with a
   positive or negative delta. Do not use `set_state_field` on
   `story_inventory.coins`, `story_inventory.credits`, XP, rank progress,
