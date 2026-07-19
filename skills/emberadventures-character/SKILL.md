@@ -442,6 +442,11 @@ must not add invented slot-specific exposure prose.
   character information and supplied to the AI for characters present in the
   scene, but omitted from reduced absent-character context.
 
+  Story-embedded copies may use decimal stat values only when the containing
+  story declares that stat key and its allowed 1-6 decimal places in
+  `state.numeric_precision.character_stats`. Decimal precision is story-owned,
+  so standalone reusable character-library definitions remain integer-only.
+
   Do not put unlock timing, objective requirements, creator instructions, or
   scheduling notes here. Bad: `Should not appear before Harz politics become
   relevant.` Good: `Serves House Harz as a cautious noble contact.`
