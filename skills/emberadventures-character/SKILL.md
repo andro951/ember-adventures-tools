@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.2`.
+Current skill version: `1.0.3`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -420,6 +420,17 @@ Outfits are immutable clothing presets stored on the character definition. They 
 - `starting_inventory`: Array of starting inventory item strings or structured item objects if the item needs metadata. Use examples like `"Coin pouch"` or `{ "name": "Silver key", "note": "Opens the guild side door" }`. Do not store items gained during play here.
 
 - `durable_known_facts`: Array of durable facts the character definition starts with. Use concise strings. These are not chat history and not current scene memory. Avoid future spoilers unless the prompt projection system will hide them until relevant. For public/standalone character definitions, prefer facts safe for library/editor display; put story-only secrets in hidden story objectives, future cast notes, or private prompt projections instead.
+
+- `stats`: Optional object of game-specific integer stats. Keys are authored,
+  readable stable identifiers such as `strength`, `agility`, `mana`,
+  `capacity_cost`, or `pack_share`; EmberAdventures does not prescribe a fixed
+  stat list. Every value must be a JavaScript safe integer. Negative, zero, and
+  positive integers are valid; decimals, numeric strings, booleans, null, and
+  values outside the safe-integer range are invalid. Omit `stats` when the
+  character does not participate in an authored numeric system. Do not add
+  generic RPG stats merely to fill the field. Stats are shown with full
+  character information and supplied to the AI for characters present in the
+  scene, but omitted from reduced absent-character context.
 
   Do not put unlock timing, objective requirements, creator instructions, or
   scheduling notes here. Bad: `Should not appear before Harz politics become

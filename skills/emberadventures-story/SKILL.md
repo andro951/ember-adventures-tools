@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.8`.
+Current skill version: `1.0.9`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -2453,6 +2453,7 @@ Useful reward types include:
 - `add_story_rule`
 - `remove_story_rule`
 - `set_state_field`
+- `modify_integer`
 - `adjust_relationship`
 - `add_state_list_item`
 - `remove_state_list_item`
@@ -2506,6 +2507,122 @@ Permanent state/body/relationship changes:
   "value": "left arm intact and strong; right arm rebuilt as a matching synthetic combat arm"
 }
 ```
+
+### Integer Stats And Reference Math
+
+Character definitions may optionally include a `stats` object for authored,
+game-specific numeric systems:
+
+```json
+"stats": {
+  "strength": 7,
+  "mana": 12,
+  "capacity_cost": 5
+}
+```
+
+Stat keys are arbitrary stable identifiers chosen by the story. Every stat
+value must be a JavaScript safe integer. Negative, zero, and positive values are
+valid. Do not use decimals, numeric strings, null, booleans, or unsafe integers.
+Do not add generic stats unless the story actually uses them. Full information
+for a character present in the scene includes `stats`; reduced context for an
+absent character intentionally omits it.
+
+Use `modify_integer` for deterministic integer arithmetic against existing
+story state or character fields. It supports exactly `add`, `subtract`,
+`multiply`, and integer `divide`. Division truncates toward zero. Rewards run in
+listed order, so later rewards see earlier results.
+
+Direct state target with a direct state operand:
+
+```json
+{
+  "type": "modify_integer",
+  "operation": "subtract",
+  "field_path": ["story_inventory", "capacity_available"],
+  "value_path": ["story_inventory", "capacity_reserved"]
+}
+```
+
+Direct state target with a character-relative operand:
+
+```json
+{
+  "type": "modify_integer",
+  "operation": "subtract",
+  "field_path": ["story_inventory", "capacity_available"],
+  "value_character_id": "character-dessa",
+  "value_path": ["stats", "capacity_cost"]
+}
+```
+
+Character-relative target with a direct state operand:
+
+```json
+{
+  "type": "modify_integer",
+  "operation": "add",
+  "character_id": "character-dessa",
+  "field_path": ["stats", "strength"],
+  "value_path": ["story_inventory", "training_bonus"]
+}
+```
+
+Character-relative target and character-relative operand:
+
+```json
+{
+  "type": "modify_integer",
+  "operation": "add",
+  "character_id": "character-dessa",
+  "field_path": ["stats", "strength"],
+  "value_character_id": "character-mara",
+  "value_path": ["stats", "training_bonus"]
+}
+```
+
+Literal operand:
+
+```json
+{
+  "type": "modify_integer",
+  "operation": "multiply",
+  "character_id": "character-dessa",
+  "field_path": ["stats", "strength"],
+  "value": 2
+}
+```
+
+`character_id` anchors `field_path` at the live character with that stable
+definition id. Without it, `field_path` starts at story state.
+`value_character_id` similarly anchors `value_path`; without it, `value_path`
+starts at story state. The resolver covers players, party characters, inspected
+NPCs, future cast, and story shop/job character containers while preferring the
+current live entity when lifecycle mirrors exist.
+
+Every `modify_integer` reward must obey all of these rules:
+
+- Include exactly one of `value` or `value_path`.
+- `value_character_id` is valid only with `value_path`.
+- `field_path` and `value_path` must be non-empty arrays of non-empty strings.
+- Every referenced character id must exist in the story definition.
+- Every target and referenced path must already exist when the reward executes.
+  Never depend on missing values becoming zero and never use this reward to
+  create a path.
+- Literal and referenced values, target values, and results are safe integers.
+- A literal divide by zero is invalid and must be rejected during story import,
+  story-builder validation, and publishing. A referenced divisor that resolves
+  to zero produces `Number.MAX_SAFE_INTEGER` and logs a diagnostic warning.
+- Overflow and underflow clamp to `Number.MAX_SAFE_INTEGER` and
+  `Number.MIN_SAFE_INTEGER`. The runtime checks bounds before arithmetic so an
+  unsafe intermediate result is never stored.
+- Paths may never contain `__proto__`, `prototype`, or `constructor`.
+
+Use ordinary unique inline rewards for one-off arithmetic. If the exact same
+math reward is needed in multiple objectives/routes/choices, put it in one
+named reward bundle and reference that bundle. Importing and publishing use the
+same authoritative story validator, so do not rely on one path accepting math
+that the other rejects.
 
 Relationship/stat changes:
 
