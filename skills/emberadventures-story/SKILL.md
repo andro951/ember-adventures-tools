@@ -406,9 +406,10 @@ with rollback and choice support.
     pacing density.
     Direct choice clusters must be playable by Auto mode. Unless every option
     is intentionally fatal or ending-only, include at least one currently
-    selectable continuation option that keeps the story moving, put the safest
-    or most neutral continuation first, or mark the preferred auto path with
-    `auto_preferred: true`. Do not make the only available choice a hidden
+    selectable continuation option that keeps the story moving. Auto mode asks
+    the AI to choose among currently selectable options from player-visible
+    context, personality, relationships, and recent actions; array order is not
+    a preferred-route signal. Do not make the only available choice a hidden
     locked option, a dead end, or a game-over branch unless that is the intended
     ending moment.
     Use conditional `next_objectives` when consequences should route from
@@ -3841,10 +3842,12 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   route`, `Fail-forward dark route`, and `Best with first law: Truth or
   Freedom`. Good visible `effects` examples include `credits -80`, `trust >=
   6`, `suspicion +1`, and `requires cellar key`.
-  Auto mode may complete choice objectives without opening the UI. Unless every
-  option is intentionally fatal or ending-only, provide at least one selectable
-  continuation option with no requirements that keeps the story moving. Put the safest/neutral
-  continuation first, or add `auto_preferred: true` to the preferred auto path.
+  Auto mode may complete choice objectives without opening the UI. It asks the
+  AI to choose among currently selectable options using only player-visible
+  state and recent context; it does not use array order or an author-selected
+  preferred route. Unless every option is intentionally fatal or ending-only,
+  provide at least one selectable continuation option with no requirements that
+  keeps the story moving.
 
 - Objective `completion_message`: Optional completion message string. Use `""` if not needed.
 
