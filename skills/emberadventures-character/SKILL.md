@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.3`.
+Current skill version: `1.0.4`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -382,6 +382,16 @@ If nothing meaningful remains after deduplication, use `""` for `extra_descripti
 #### Outfits And Starting Equipment
 
 Outfits are immutable clothing presets stored on the character definition. They are not the same thing as the character's current runtime clothing. When a new game/import starts, the game copies the outfit referenced by `starting_outfit_id` into mutable runtime clothing. After that, the player, AI, spicy clothing removal system, location changes, outfit swaps, and manual edits should modify runtime clothing/outfit state, not the immutable outfit definitions. Never write post-play clothing changes back into `outfits`.
+
+The spicy runtime may remove all top clothing, all bottom clothing, all clothing,
+or exact individual clothing slots. Broad group removal and individual slot
+removal are mutually exclusive for one participant in one update; never emit
+both because the broad command already includes every slot in that group.
+Individual removal uses exact structured clothing slot ids and never searches
+garment descriptions for words. Image prompts add complete bare-top or
+bare-bottom wording only when the corresponding structured covering group is
+empty. Partial removal relies on the remaining structured clothing values and
+must not add invented slot-specific exposure prose.
 
 - `outfits`: Array of outfit objects. Every character must have at least one outfit, even if they only have a single outfit. A one-outfit character still needs `outfits: [{ "id": "default", "name": "Default", "clothing": { ... } }]` and `starting_outfit_id: "default"`. Do not replace `outfits` with a single `clothing` object. Do not leave it empty. Do not store active/current clothing here after play.
 

@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.9`.
+Current skill version: `1.0.10`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -3297,6 +3297,15 @@ verbatim copy of Codex process instructions.
 - `scene.intimacy_level`: Starting runtime intimacy number. Use `0` for normal story templates. Only use a nonzero value if the user explicitly requested that the story begin already inside an intimate/spicy scene.
 
 - `scene.spicy_mode`: Starting runtime spicy-scene state, as the current engine string `"off"` or `"on"`. Use `"off"` for normal story templates. Only use `"on"` if the user explicitly requested that the story begin already inside a spicy scene.
+
+  During play, intentional clothing removal starts a spicy scene when it is
+  intended to be sexual or progress toward sex. The spicy runtime can remove
+  all top clothing, all bottom clothing, all clothing, or exact individual
+  structured clothing slots. Broad and individual removal commands are
+  mutually exclusive for one participant in one update; never request both.
+  Partial removal does not authorize invented slot-specific exposure prose in
+  image prompts. Complete bare-top or bare-bottom wording is derived only when
+  the corresponding structured clothing group is empty.
 
 - `scene.party_members_present`: Array of known party-member names physically present right now. Do not include the player, `"Player"`, protagonist labels, unknown placeholders, generic groups/titles/jobs, or future cast that is not actually present. Entries must be proper character names backed by actual party-member data.
 
