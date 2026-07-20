@@ -893,7 +893,10 @@ Use purchase rewards for additional items, player or character known facts,
 story-inventory changes, relationship/state changes, objective transitions,
 images, or any other supported objective reward. The listed `item` is always
 granted separately; do not repeat it in `rewards` unless the purchase is
-intentionally supposed to grant another copy. The item's positive numeric
+intentionally supposed to grant another copy. An additional story-inventory
+item reward uses `{ "type": "add_story_item", "item": { ...normal story-inventory item... } }`;
+keep the reward discriminator separate from the nested item's own `type`.
+The item's positive numeric
 `value` is its underlying value and the exact
 amount a buying shop pays per unit. The shop's `markup` is a number of at least
 `1`; EmberAdventures charges `ceil(item.value * shop.markup)` when selling the
