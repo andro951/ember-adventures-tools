@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.11`.
+Current skill version: `1.0.13`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -885,7 +885,16 @@ character/NPC definitions in `future_cast`, not labels like `shopkeeper` or
 General item shops use `type: "general"`. Every listing contains a stable `id`,
 optional finite `quantity` (`null` or omitted means unlimited), optional
 requirements/lock fields, and an `item` using the normal story-inventory item
-shape. The item's positive numeric `value` is its underlying value and the exact
+shape. A listing may also contain `rewards`, using the exact same reward array,
+reward-bundle references, reward-template invocations, validation rules, and
+deterministic effects as an objective. EmberAdventures applies those rewards on
+every successful unit purchase, after granting the listing's normal `item`.
+Use purchase rewards for additional items, player or character known facts,
+story-inventory changes, relationship/state changes, objective transitions,
+images, or any other supported objective reward. The listed `item` is always
+granted separately; do not repeat it in `rewards` unless the purchase is
+intentionally supposed to grant another copy. The item's positive numeric
+`value` is its underlying value and the exact
 amount a buying shop pays per unit. The shop's `markup` is a number of at least
 `1`; EmberAdventures charges `ceil(item.value * shop.markup)` when selling the
 item. Use a markup near `1` for inexpensive low-class merchants and a larger
@@ -3972,7 +3981,12 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
   General shops use `markup` and optional `buying.enabled`. Their listings own a
   normal `item`; retail price is `ceil(item.value * markup)`, while merchants
-  buy eligible inventory at exactly `item.value`. Clothing shops own complete
+  buy eligible inventory at exactly `item.value`. A general-shop listing may
+  also have a `rewards` array with the complete objective reward grammar,
+  including reward-bundle ids and typed reward-template invocations. Those
+  rewards run on every successful unit purchase after the listing's normal
+  `item` is granted. Do not duplicate the listed item inside `rewards` unless an
+  extra copy is intentional. Clothing shops own complete
   outfit listings with explicit positive integer `price` and `outfit`; purchases add the preset
   to one selected owned character without equipping it.
 
