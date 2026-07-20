@@ -1466,8 +1466,10 @@ player has already visibly earned that knowledge.
   name.
 - The player must never be placed in `scene.party_members_present`,
   `scene.npcs_present`, or `scene.speak_targets`.
-- `scene.speak_targets` should usually start empty; if used, every target must
-  already be physically present in the matching scene presence list.
+- The authored starting `scene.speak_targets` must always be `[]`, even when
+  several characters or NPCs are present in the opening scene. Speaking targets
+  are runtime interaction state, not a declaration that every present character
+  should be targeted when play begins.
 - `scene.image_characters` should normally be `["Player"]` for the opening
   normal image, even when NPCs or party members are present. Opening NPCs and
   party members can receive their own profile/solo images through the app's
@@ -3697,7 +3699,7 @@ verbatim copy of Codex process instructions.
 
 - `scene.npcs_present`: Array of nearby known non-party NPC names close enough to interact. Do not use as long-term memory. Do not put generic labels such as `"guards"`, `"travelers"`, `"Guild Clerk"`, or `"cart drivers"` here; use proper named NPCs or leave it empty.
 
-- `scene.speak_targets`: Array of names allowed/expected for speech targeting. Usually empty. Every entry must be a proper character name, not a title, job, group, or generic description. This is not an off-scene contact list; every entry must also be physically present in the matching scene list: party members in `scene.party_members_present`, non-party NPCs in `scene.npcs_present`.
+- `scene.speak_targets`: Runtime array of names allowed/expected for speech targeting. In every authored reusable story definition, the starting value must be `[]`, regardless of who is present in the opening scene. Runtime play may populate it later. Any runtime entry must be a proper character name, not a title, job, group, or generic description, and must also be physically present in the matching scene list: party members in `scene.party_members_present`, non-party NPCs in `scene.npcs_present`.
 
 - `scene.image_action`: Short visual phrase, usually 2-8 words, no comma and no full sentence.
 
@@ -4888,7 +4890,7 @@ asks to populate that exact field or approves exact text for it.
 - Every `future_cast.items` object key matches that entry's own `id`; do not
   use numeric/index keys for future cast.
 - `world_map.locations` is an object.
-- `scene.speak_targets` exists.
+- `scene.speak_targets` exists and the authored starting value is exactly `[]`.
 - Objective references resolve.
 - No authored objectives, story rules, memory entries, scene participants,
   choices, rewards, map references, or other story content were silently
