@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.13`.
+Current skill version: `1.0.14`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -2161,6 +2161,10 @@ For relationship-focused stories:
   player reaction and follow-up.
 - Store promises, fears, avoided topics, favorite memories, and changed
   boundaries in durable state when they matter later.
+- For relationship or conversation outcomes judged from natural play, default to
+  a player-paced visible scene objective followed by a hidden automatic
+  AI-routing objective. The detailed pattern appears under AI-adjudicated
+  hidden-outcome objectives.
 
 Useful objective purposes include discovery, travel, conversation/teaching,
 trust-building, explicit choice, hidden AI route, training, shop/job/resource
@@ -3111,6 +3115,93 @@ choosing between them.
 
 ### AI-adjudicated hidden-outcome objectives
 
+#### Default relationship/conversation routing pattern
+
+When hidden AI routing judges relationship status, trust, loyalty, honesty,
+attraction, compatibility, opinions, known interpersonal information, or other
+conversation-derived outcomes, default to two objectives instead of asking one
+AI-controlled objective to decide both when the scene ends and what it means:
+
+1. Create a visible, player-paced scene objective that puts the player with the
+   specific character or characters being evaluated. Its private criteria may
+   identify the topics, attitudes, facts, and relationship evidence the scene
+   should naturally explore, but topic coverage is not completion.
+2. Give that visible objective a concrete, player-controllable scene-ending
+   condition: the player leaves, explicitly concludes the exchange, accepts a
+   clear ending, is dismissed or expelled, or an interruption definitively ends
+   the interaction. Never complete it merely because enough subjects were
+   discussed, enough evidence exists to classify the player, or the player is
+   still participating normally within the scene.
+3. Follow it with a non-selectable hidden AI-adjudicated objective. Because the
+   conversation has already ended, this second objective completes immediately,
+   evaluates the completed interaction and relevant durable state, selects one
+   hidden route, applies its consequences, and advances. It must not replay,
+   extend, or prematurely terminate the preceding conversation.
+
+This separation is the default for meetings, negotiations, interviews,
+interrogations, dates, trials, recruitment talks, political discussions,
+relationship-defining scenes, and important private conversations. It gives the
+player control over conversational pacing while preserving AI judgment of the
+outcome. A direct AI-routed objective remains appropriate for clear externally
+observable actions such as defeating a monster, escaping confinement, repairing
+an object, or resolving a battle.
+
+Example pair:
+
+```json
+[
+  {
+    "id": "attend-war-council",
+    "title": "Take Part in the War Council",
+    "type": "story",
+    "status": "active",
+    "selectable": true,
+    "summary": "Discuss the coming battle with the four heroes for as long as you need.",
+    "completion_control": "player",
+    "completion_criteria": "Complete only when the council has clearly ended because the player leaves or concludes it, the heroes dismiss or expel the player, or an interruption definitively ends the meeting. Do not complete merely because the planned strategy topics were discussed or enough evidence exists to judge the player. During the active meeting, let the heroes naturally raise the authored strategic disagreements and react to the player's opinions.",
+    "completion_instruction": "End the council without revealing hidden route labels, then proceed directly to private adjudication.",
+    "rewards": []
+  },
+  {
+    "id": "judge-war-council",
+    "title": "Resolve the War Council",
+    "type": "story",
+    "status": "hidden",
+    "selectable": false,
+    "requires": ["attend-war-council"],
+    "completion_control": "ai",
+    "completion_criteria": "The preceding war council has already ended. Complete immediately and judge the player's conduct, opinions, known facts, and current relationships from that completed interaction.",
+    "completion_instruction": "Apply the selected private result without replaying or extending the council.",
+    "route_control": "ai",
+    "rewards": [],
+    "outcome_routes": [
+      {
+        "id": "earned-hero-trust",
+        "criteria": "The player listened, contributed useful judgment, and treated the heroes as respected partners.",
+        "requirements": [],
+        "rewards": [],
+        "next_objective_id": "prepare-trusted-plan"
+      },
+      {
+        "id": "strained-hero-alliance",
+        "criteria": "The player remained involved but damaged cooperation through dismissal, hostility, manipulation, or reckless judgment.",
+        "requirements": [],
+        "rewards": [],
+        "next_objective_id": "prepare-strained-plan"
+      },
+      {
+        "id": "uncertain-hero-alliance",
+        "criteria": "The interaction ended without strong evidence for a more specific relationship outcome.",
+        "requirements": [],
+        "rewards": [],
+        "next_objective_id": "prepare-cautious-plan",
+        "fallback": true
+      }
+    ]
+  }
+]
+```
+
 Use this objective pattern when the story must branch according to what actually
 happened in the scene, but presenting the possible outcomes to the player would
 reveal hidden consequences or turn an organic result into an explicit choice.
@@ -3231,6 +3322,10 @@ Rules:
   objects, and an existing `next_objective_id` or `terminal: true`. Exactly one
   route is the no-requirements fallback/default. AI-routed objectives do not
   also use `next_objectives`.
+- Relationship/conversation-based hidden routing normally uses the two-objective
+  player-paced-scene then hidden-adjudication pattern. Verify that the visible
+  objective cannot complete merely because the conversation is proceeding or
+  enough classification evidence has accumulated.
 - Every future-character reward references `future_cast.items[id]`, where
   `id` is the exact future-cast object key and the entry's own `id`.
 - The active opening objective is actionable in the starting scene.
