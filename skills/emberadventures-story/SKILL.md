@@ -882,6 +882,79 @@ The shop owner and purchasable/talkable characters must be real full
 character/NPC definitions in `future_cast`, not labels like `shopkeeper` or
 `worried baker`.
 
+When a character shop has a story-specific secondary cost or state effect whose
+magnitude comes from each purchasable character, define that behavior once in
+`state.character_shop_cost_templates` and put the source values in the
+character's `full_character.stats`. Reference the template from the shop with
+`cost_template_id`. Never duplicate those stat values on individual shop
+items, and never expect the engine to understand story-specific concepts such as
+capacity, influence, or command points.
+
+```json
+{
+  "character_shop_cost_templates": {
+    "pact-bond": {
+      "type": "stat",
+      "costs": [
+        {
+          "label": "Available Pact Capacity",
+          "available_expression": {
+            "initial": { "path": ["story_inventory", "pact_capacity"] },
+            "operations": [
+              {
+                "operation": "subtract",
+                "operand": { "path": ["story_inventory", "pact_used"] }
+              }
+            ]
+          },
+          "op": ">=",
+          "required_stat": "pack_capacity_cost"
+        }
+      ],
+      "effects": [
+        {
+          "label": "Pact Capacity used",
+          "operation": "add",
+          "field_path": ["story_inventory", "pact_used"],
+          "value_stat": "pack_capacity_cost"
+        },
+        {
+          "label": "Pact Capacity added",
+          "operation": "add",
+          "field_path": ["story_inventory", "pact_capacity"],
+          "value_stat": "pack_capacity_return"
+        }
+      ]
+    }
+  },
+  "story_shops": {
+    "bond-market": {
+      "type": "character",
+      "cost_template_id": "pact-bond"
+    }
+  }
+}
+```
+
+A `type: "stat"` template evaluates every `costs[]` entry against the
+selected character before applying anything. `available_expression` uses the
+normal exact numeric-expression grammar. `required_stat` names a numeric key
+in that character's `stats`. Each `effects[]` entry applies
+`add`, `subtract`, `multiply`, or `divide` to its story-state
+`field_path`, using the selected character stat named by `value_stat`.
+Currency, ordinary requirements, all stat costs, all stat effects, character
+acquisition, and `on_purchase_objective` startup are one atomic transaction.
+A return effect can never fund its own upfront cost because every cost is
+checked before any effect is applied.
+
+Use this only for reusable per-character stat-derived costs or effects. Keep
+ordinary listing-specific currency differences in `price`, and omit
+`cost_template_id` entirely when a character shop does not need this feature.
+The engine does not automatically reverse these effects when a character
+leaves. If a story supports release, loss, or resale, author that behavior
+explicitly with objective/reward templates.
+
+
 General item shops use `type: "general"`. Every listing contains a stable `id`,
 optional finite `quantity` (`null` or omitted means unlimited), optional
 requirements/lock fields, and an `item` using the normal story-inventory item
