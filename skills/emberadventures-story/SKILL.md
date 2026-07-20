@@ -832,7 +832,7 @@ objects just to make a diagram.
 
 Optional hidden economy sections:
 
-`story_inventory`, `story_shops`, `story_job_offers`,
+`story_inventory`, `character_shop_cost_templates`, `story_shops`, `story_job_offers`,
 `story_job_offer_history`, `active_generated_jobs`, and
 `story_generated_npc_pool`.
 
