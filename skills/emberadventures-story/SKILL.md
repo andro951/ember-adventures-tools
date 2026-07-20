@@ -2482,6 +2482,28 @@ Useful reward types include:
 - `modify_number`
 - `apply_reward_template`
 
+Story-inventory item grant:
+
+```json
+{
+  "type": "add_story_item",
+  "item": {
+    "id": "signed-guild-writ",
+    "name": "Signed Guild Writ",
+    "type": "quest",
+    "quantity": 1,
+    "value": 0,
+    "sellable": false,
+    "quest_item": true,
+    "description": "A writ proving the guild accepted the commission."
+  }
+}
+```
+
+Keep the reward discriminator in the outer `type` and the inventory item's own
+category in `item.type`. Use this same shape inside objectives, reward bundles,
+reward templates, and general-shop purchase rewards.
+
 Time advancement:
 
 ```json
