@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.14`.
+Current skill version: `1.0.17`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -354,28 +354,35 @@ with rollback and choice support.
    substantial story design.
 3. Run the story file storage check and help with Google Drive or GitHub setup
    when the creator wants shared storage.
-4. Build a premise with a clear playable starting situation, not just lore.
-5. Draft or update the human-readable story design document. Recommend a story
+4. For every new story, explicitly ask whether the creator wants to allow any
+   compatible character from the player's Character Library to be used as the
+   Player. Never infer, skip, or silently answer this question, even when the
+   creator delegated other design choices. Record the answer in
+   `allow_any_player`. Explain that arbitrary players are appropriate only when
+   the premise and opening can work without a fixed protagonist identity.
+5. Build a premise with a clear playable starting situation, not just lore.
+6. Draft or update the human-readable story design document. Recommend a story
    structure type after learning the premise if the user has not chosen one.
-6. Ask for approval or missing information unless the user delegated the design.
-7. Convert the approved design into final story JSON only after the outline,
+7. Ask for approval or missing information unless the user delegated the design.
+8. Convert the approved design into final story JSON only after the outline,
    cast, arc plan, and objective strategy are coherent.
-8. Create or verify required public metadata.
-9. Create a focused starting state with one immediate active objective.
-10. Build a hidden objective spine for the main story.
-11. Add side objectives that fit the premise instead of filler errands.
-12. Add future cast only when it improves play; keep locked future entries hidden.
-13. Build a useful world map with starting locations and unlockable future areas.
-14. Write a vivid opening message that preserves player agency.
-15. Run the progression design pass before final JSON:
+9. Create or verify required public metadata.
+10. Create a focused starting state with one immediate active objective.
+11. Build a hidden objective spine for the main story.
+12. Add side objectives that fit the premise instead of filler errands.
+13. Add future cast only when it improves play; keep locked future entries hidden.
+14. Build a useful world map with starting locations and unlockable future areas.
+15. Write a vivid opening message that preserves player agency.
+16. Run the progression design pass before final JSON:
     - define the current starting state;
     - define the hidden future state the story can reach;
     - define which objective rewards update state, rules, map locations, scene
       lists, character fields, images, items, and future-cast availability;
     - define which `story_rules` are active at start and which objectives add,
       replace, or remove them.
-16. Run the feature-utilization pass. For every serious story, explicitly
-    decide whether the story should use `state.players`, `story_rules`,
+17. Run the feature-utilization pass. For every serious story, explicitly
+    decide whether the story should use `state.players`, `allow_any_player`,
+    `any_player_starting_state`, `story_rules`,
     `future_cast`, map unlocks, branch/exclusive objectives, relationship/stat
     rewards, `set_state_field`, `add_story_rule`, `remove_story_rule`,
     `add_state_list_item`, `remove_state_list_item`, `kill_character`,
@@ -3511,6 +3518,67 @@ verbatim copy of Codex process instructions.
 
 - `state`: Starting story state object. This contains immutable/default story setup that is copied into a mutable game state when starting a new game.
 
+- `allow_any_player`: Required boolean, default `false`. This answer must come
+  from the creator during every new-story intake. When `true`, the start-of-game
+  character selector includes `Select Character From Library` in addition to
+  any authored `state.players` options. When `state.players` is absent or empty,
+  EmberAdventures assumes arbitrary-player selection is required even if this
+  value is false; therefore use `true` explicitly for that design. Use `false`
+  when the premise depends on a fixed protagonist identity, body, history,
+  relationships, abilities, or authored personal arc that cannot safely be
+  supplied by an unrelated library character.
+
+- `any_player_starting_state`: Optional object applied only when the player
+  chooses a Character Library character through `allow_any_player`. Omit the
+  object entirely when the story does not need to modify library characters.
+  Omit each child field that the library character should retain. Supported
+  fields are:
+
+  ```json
+  {
+    "role": "story-specific role",
+    "durable_known_facts_to_add": [],
+    "starting_inventory": [],
+    "stats": {},
+    "starting_held_items": {
+      "right_hand": null,
+      "left_hand": null
+    },
+    "starting_state_of_mind": "focused",
+    "starting_physical_state": "healthy",
+    "starting_pose": "standing",
+    "male_outfits": [],
+    "male_starting_outfit_id": "male-story-outfit",
+    "non_male_outfits": [],
+    "non_male_starting_outfit_id": "non-male-story-outfit"
+  }
+  ```
+
+  `role` replaces the selected character's role for this playthrough.
+  `durable_known_facts_to_add` is the only additive field: its entries are
+  appended without exact duplicates to both durable and current runtime known
+  facts. `starting_inventory`, `stats`, and `starting_held_items` replace the
+  selected character's corresponding definition defaults and current runtime
+  values. The three `starting_*` condition fields replace both their immutable
+  starting values and live `state_of_mind`, `physical_state`, and `pose` values.
+  Story numeric-precision rules apply to overlay `stats` exactly as they apply
+  to authored character stats.
+
+  Outfit overrides are gender-branch replacements. A selected character whose
+  normalized gender is `male` uses `male_outfits`; every other gender uses
+  `non_male_outfits`. When a branch is present, it must be a nonempty list of
+  valid full outfit records, and its matching starting outfit id must reference
+  an id in that list. That branch replaces all copied library outfits, starting
+  and active outfit ids, and current clothing for this playthrough. When a
+  branch is omitted, retain the library character's outfits and active outfit.
+  Do not provide a standalone clothing override.
+
+  Never put library-owned identity fields in this object: `name`, `age`,
+  `gender`, `species`, appearance, personality, speech style, voice, image
+  configuration, and profile image remain owned by the selected Character
+  Library definition. The copied runtime Player receives the overlay; the
+  reusable library definition is never modified.
+
 - `messages`: Array of prewritten opening messages. Include at least the opening narrator message. Opening messages are immutable starting content only: do not store live chat history, post-start messages, or save-game transcript data in a story definition. Opening messages are shown to the player and treated as already represented by the starting state; they are not reprocessed as new state changes.
 
   Opening messages should contain only clean exported message fields needed to
@@ -3709,7 +3777,10 @@ verbatim copy of Codex process instructions.
 
 ## state.player
 
-`player` is the protagonist/playable character. It uses current story method fields, with immutable/default fields copied from the common character definition where possible.
+`player` is the authored fallback/default protagonist. It uses current story
+method fields, with immutable/default fields copied from the common character
+definition where possible. It may be omitted only when `state.players` is empty
+and the story intentionally requires Character Library selection.
 
 - `player.name`: Real character name. Do not use `"Player"`, `"Protagonist"`, `"Hero"`, `"Main Character"`, or placeholders.
 
@@ -3740,11 +3811,24 @@ verbatim copy of Codex process instructions.
 
 ## state.players
 
-- `players`: Optional array of full playable character definitions for stories that let the player choose a protagonist before the opening prompt. Omit this field or leave it empty for normal single-protagonist stories.
+- `players`: Optional array of full authored playable character definitions for
+  stories that let the player choose a protagonist before the opening prompt.
+  This is independent of `allow_any_player`: a story may offer authored options,
+  the Character Library option, or both.
+
+- A fixed single-protagonist story must put that protagonist in `players` as a
+  one-entry array and copy the same definition to `state.player`. With
+  `allow_any_player: false`, the app starts that sole option directly without a
+  picker. Do not omit `players` for a fixed protagonist: an absent or empty list
+  intentionally means the player must choose from the Character Library.
 
 - When `players` contains more than one entry, the app opens a character-select screen before starting the first playable prompt. The chosen entry is copied into runtime `state.player`, and runtime play must not keep the full `players` array as mutable game state.
 
-- `state.player` must still exist as a fallback/default playable character. For multi-player-select stories, make `state.player` a copy of the first/default option in `players`.
+- When `players` contains authored entries, `state.player` must still exist as a
+  fallback/default and should copy the first/default option. When `players` is
+  absent or empty, the app requires Character Library selection before runtime;
+  `state.player` may be omitted because the selected library character becomes
+  the runtime player before the opening scene starts.
 
 - Every `players[]` entry must use the same immutable/default character
   definition shape as `state.player`: real `name`, integer `age`, `gender`,
@@ -3758,6 +3842,22 @@ verbatim copy of Codex process instructions.
 - Do not put unselected playable options in `state.characters`, `scene.party_members_present`, `scene.npcs_present`, `npc_directory`, or opening messages as present party members. They are not in the scene unless the story explicitly introduces them later.
 
 - Opening messages for multi-player-select stories should be written so they work for any selected protagonist, or should refer to the selected character generically by role/title. Do not assume the fallback player name unless every option shares that name.
+
+- For arbitrary-player stories, write opening messages with `{player_name}` and
+  avoid assumptions about gender, body, appearance, personality, personal
+  history, or preexisting relationships unless the story supplies the required
+  fact through `any_player_starting_state`. Story objectives, rules, shops,
+  rewards, and dialogue must remain coherent for every compatible library
+  character. Use `"Player"` only in structured runtime target fields that the
+  engine resolves, such as `scene.image_characters`; do not use it as a literal
+  character name.
+
+- If the premise requires story inventory, stats, held items, condition, pose,
+  role, known facts, or genre-appropriate clothing regardless of the selected
+  library character, define only those requirements in
+  `any_player_starting_state`. Exclude fields that are merely defaults or flavor;
+  preserving the creator's library character is preferable when the story does
+  not require a replacement.
 
 ## state.characters
 
