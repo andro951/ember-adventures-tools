@@ -359,7 +359,12 @@ with rollback and choice support.
    Player. Never infer, skip, or silently answer this question, even when the
    creator delegated other design choices. Record the answer in
    `allow_any_player`. Explain that arbitrary players are appropriate only when
-   the premise and opening can work without a fixed protagonist identity.
+   the premise and opening can work without a fixed protagonist identity. When
+   the answer is yes, also decide which library-character field groups the
+   story intentionally allows to carry into play. Default to replacing every
+   story-controlled field group; preserving library inventory, stats, held
+   items, outfits, or other runtime setup must be a deliberate story-design
+   choice, never an accidental result of omitted authoring.
 5. Build a premise with a clear playable starting situation, not just lore.
 6. Draft or update the human-readable story design document. Recommend a story
    structure type after learning the premise if the user has not chosen one.
@@ -3529,10 +3534,16 @@ verbatim copy of Codex process instructions.
   supplied by an unrelated library character.
 
 - `any_player_starting_state`: Optional object applied only when the player
-  chooses a Character Library character through `allow_any_player`. Omit the
-  object entirely when the story does not need to modify library characters.
-  Omit each child field that the library character should retain. Supported
-  fields are:
+  chooses a Character Library character through `allow_any_player`. For a
+  normal arbitrary-player story, include this object and explicitly author all
+  supported replacement groups. The default intent is to use the selected
+  library character for identity, personality, appearance, voice, and profile
+  image while the story replaces the character's role, inventory, stats, held
+  items, current condition/pose, and outfits. Empty arrays, empty objects, and
+  null hands are meaningful replacements and must be authored when the player
+  is supposed to start without those things. Omit a child field only after the
+  creator intentionally decides that field group may carry in from unrelated
+  Character Library content. Supported fields are:
 
   ```json
   {
@@ -3564,14 +3575,26 @@ verbatim copy of Codex process instructions.
   Story numeric-precision rules apply to overlay `stats` exactly as they apply
   to authored character stats.
 
-  Outfit overrides are gender-branch replacements. A selected character whose
-  normalized gender is `male` uses `male_outfits`; every other gender uses
-  `non_male_outfits`. When a branch is present, it must be a nonempty list of
+  Outfit overrides are gender-branch replacements. By default, provide both
+  branches so foreign library outfits cannot enter the story. A selected
+  character whose normalized gender is `male` uses `male_outfits`; every other
+  gender uses `non_male_outfits`. When a branch is present, it must be a nonempty list of
   valid full outfit records, and its matching starting outfit id must reference
   an id in that list. That branch replaces all copied library outfits, starting
   and active outfit ids, and current clothing for this playthrough. When a
-  branch is omitted, retain the library character's outfits and active outfit.
-  Do not provide a standalone clothing override.
+  branch is omitted, the engine retains the library character's outfits and
+  active outfit. Omit a branch only when the story intentionally permits
+  foreign outfits and clothing for that gender branch. Do not provide a
+  standalone clothing override.
+
+  Before finalizing an arbitrary-player story, record an explicit decision for
+  every replacement group: role, inventory, stats, held items, condition/pose,
+  male outfits, and non-male outfits. Unless the premise has a specific reason
+  to accept library content, author replacements for all groups. Use `[]` for
+  no starting inventory, `{}` for no story stats, and null hand values for no
+  held items. Do not omit these fields merely because their intended values are
+  empty. This prevents unrelated weapons, quest items, currencies, abilities,
+  uniforms, or outfits from leaking into a new story.
 
   Never put library-owned identity fields in this object: `name`, `age`,
   `gender`, `species`, appearance, personality, speech style, voice, image
@@ -3854,10 +3877,11 @@ and the story intentionally requires Character Library selection.
 
 - If the premise requires story inventory, stats, held items, condition, pose,
   role, known facts, or genre-appropriate clothing regardless of the selected
-  library character, define only those requirements in
-  `any_player_starting_state`. Exclude fields that are merely defaults or flavor;
-  preserving the creator's library character is preferable when the story does
-  not require a replacement.
+  library character, define them in `any_player_starting_state`. The default is
+  to define every supported story-controlled group, including explicit empty
+  replacements. Preserve a library field group only when the creator
+  intentionally wants foreign content from that group to remain available and
+  the story remains coherent with arbitrary values from it.
 
 ## state.characters
 
