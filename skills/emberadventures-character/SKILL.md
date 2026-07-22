@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.11`.
+Current skill version: `1.0.12`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -291,7 +291,7 @@ inventory, and durable facts.
 
 - `romanceable`: Required boolean. Use `true` when the character is an intended potential romantic or sexual interest. Use `false` intentionally for plot-only officials, incidental contacts, antagonists, or other characters who should not normally adapt to the player's preferred romantic genders. Most recurring AI-created characters should be romanceable unless their story function gives a concrete reason not to be. Player characters are never gender-adapted from this field.
 
-- `fallback_name`, `fallback_outfits`, and `fallback_starting_outfit_id`: Optional opposite male/non-male presentation for the same character. The canonical `name`, `gender`, `outfits`, and `starting_outfit_id` remain the normal definition. Supply only one `fallback_name`; never create a name-alias list. A male canonical character uses the fallback for a non-male presentation, while a female or futanari canonical character uses it for a male presentation. Prefer a fallback name that retains at least the first letter, and preferably the first two letters, of the canonical name so the character remains recognizable. A natural, setting-appropriate authored name is more important than preserving letters when that would make the result strained. Fallback outfits must remain recognizable equivalents: preserve each outfit's purpose, colors, equipment, status, and general visual identity while changing only gendered construction, underwear, fit, and similar presentation details unless a larger change is specifically justified. Appearance, personality, facts, relationships, and all other identity fields remain unchanged. Missing fallback fields are allowed and never invalidate the character.
+- `fallback_name`, `fallback_outfits`, and `fallback_starting_outfit_id`: One atomic opposite male/non-male presentation group for the same character. The canonical `name`, `gender`, `outfits`, and `starting_outfit_id` remain the normal definition. A fixed-presentation standalone library character may omit the entire fallback group, but never provide only part of it. Gender-flexible story characters must provide all three fields; the story skill defines that stronger requirement. Supply only one `fallback_name`; never create a name-alias list. A male canonical character uses the fallback for a non-male presentation, while a female or futanari canonical character uses it for a male presentation. Prefer a fallback name that retains at least the first letter, and preferably the first two letters, of the canonical name so the character remains recognizable. A natural, setting-appropriate authored name is more important than preserving letters when that would make the result strained. Fallback outfits must be nonempty and remain recognizable equivalents: preserve each outfit's purpose, colors, equipment, status, and general visual identity while changing only gendered construction, underwear, fit, and similar presentation details unless a larger change is specifically justified. `fallback_starting_outfit_id` must reference one of those outfits. Appearance, personality, facts, relationships, and all other identity fields remain unchanged.
 
 - `fallback_gender`: Optional only for a canonical futanari character. Use exactly `"male"` or `"female"` to decide which presentation is used when the player's selected preferences include male and female but not futanari. Omit it for non-futanari characters. Across a generated cast, split futanari fallback genders evenly so a 40% male / 40% female / 20% futanari base distribution becomes 50/50 when only male and female are preferred.
 
@@ -325,17 +325,17 @@ When migrating an existing cast into gender-flexible definitions, preserve ident
 
 - `speech_style`: Durable dialogue behavior. Write one concise sentence describing how the character usually speaks, such as terse, warm, formal, guarded, profane, poetic, blunt, clipped, rambling, teasing, flirtatious, evasive, or emotionally armored. Do not use this for current mood, TTS/voice metadata, visual traits, story instructions, relationship outcomes, or hidden future facts.
 
-- `boldness`: Immutable 1-10 number describing how forward, assertive, sexually/directly expressive, or risk-taking the character tends to be. Numeric `0` and values outside `1-10` are invalid and normalize to the neutral default `5`. A custom string is also valid when the character needs nuance that the scale cannot express. If using a string, write only the behavior description, such as `"cautious flirt; uses compliments, lingering looks, and mild teasing when the scene supports it"`. Never include storage/system wording, effective-value summaries, numeric prefix summaries, or score annotations in the saved field. This is separate from the user's `characterBoldnessOffset` profile setting, which adjusts the maximum effective boldness at runtime.
-  - `1`: very reserved; avoids romantic or sexual initiative unless trust and context are very strong.
-  - `2`: reserved; shows warmth, shy interest, and subtle attraction before direct flirting.
-  - `3`: cautious flirt; uses compliments, lingering looks, and mild teasing when the scene supports it.
-  - `4`: friendly flirt; comfortable with banter, playful closeness, and light romantic pressure without pushing hard.
-  - `5`: balanced; can openly flirt, tease, touch lightly, or show interest while still acting naturally for the setting.
-  - `6`: confident; willingly initiates romantic tension, suggestive comments, and physical closeness when attraction supports it.
-  - `7`: bold; frequent teasing, direct attraction, provocative posing, and confident escalation when the player responds positively.
-  - `8`: very bold; openly suggestive, eager, and willing to reveal or touch themself if the player keeps watching.
-  - `9`: aggressively bold exhibitionist; may expose intimate parts, escalate sexual teasing, and push toward risky displays when context allows and the player does not stop them.
-  - `10`: unnaturally aggressive exhibitionist boldness; if the player watches and does not stop them, they will openly expose their chest, keep escalating into visible masturbation and full-body exposure, beg the player to fuck them, orgasm from the display, and eventually give up if rejected.
+- `boldness`: Immutable 1-10 number describing how readily and directly the character initiates romantic or sexual interest. It measures initiative and directness, not aggression, dominance, submission, unrelated confidence, kink interests, or willingness to ignore consent. Numeric `0` and values outside `1-10` are invalid and normalize to the neutral default `5`. A custom string is also valid when the character needs nuance that the scale cannot express. If using a string, write only the behavior description, such as `"cautious; may initiate small compliments or mild flirting, then pauses to judge the response"`. Never include storage/system wording, effective-value summaries, numeric prefix summaries, or score annotations in the saved field. This is separate from the user's `characterBoldnessOffset` profile setting, which adjusts the maximum effective boldness at runtime. Use the same scale for every gender; gender adaptation never changes personality.
+  - `1`: very reserved; almost never initiates romance or intimacy and waits for unmistakable mutual interest.
+  - `2`: reserved; expresses interest subtly and waits for clear encouragement before initiating.
+  - `3`: cautious; may initiate small compliments or mild flirting, then pauses to judge the response.
+  - `4`: mildly forward; comfortably initiates light flirting or closeness when the context supports it.
+  - `5`: balanced; can initiate direct interest, flirting, invitations, or welcomed physical closeness.
+  - `6`: confident; readily initiates romantic tension, invitations, and physical closeness when attraction supports it.
+  - `7`: very forward; states attraction directly and actively proposes escalation while watching for a clear response.
+  - `8`: highly forward; readily initiates explicit flirting, intimate invitations, or consensual exposure when appropriate.
+  - `9`: extremely forward; clearly proposes sexual escalation and communicates desire directly, while waiting for consent before meaningful escalation.
+  - `10`: maximum initiative; openly states exactly what they want and proactively creates clear opportunities for consensual escalation, immediately respecting refusal or hesitation.
 
 - `starting_relationship_to_player`: Starting relationship text copied into runtime when a new game/import begins. Examples: `"self"`, `"unknown"`, `"trusted companion"`, `"professional handler"`, `"rival"`, `"romantic partner"`. Do not update this after play; runtime relationship changes belong elsewhere.
 
@@ -1294,7 +1294,7 @@ Include the race/species parenthetical only when the saved preference requests i
 
 ## Personality
 
-Use preference-file personality and boldness guidance. Make personalities durable and specific, not just current mood or a list of sexual behaviors.
+Use preference-file personality and boldness guidance. Make personalities durable and specific, not just current mood or a list of sexual behaviors. Boldness, aggression, and dominant/submissive dynamics are independent: a character may be extremely bold and submissive, quietly dominant, gentle and forward, or aggressive but romantically reserved.
 
 For spicy originals, combine sexuality with identity: job, flaws, humor, fears, habits, principles, contradictions, and social style.
 

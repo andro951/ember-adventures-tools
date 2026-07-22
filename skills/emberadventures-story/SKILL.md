@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.23`.
+Current skill version: `1.0.24`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -297,6 +297,14 @@ human can read it easily and an AI can convert it reliably:
 - image guidance and important visual moments;
 - notes from the user and unresolved decisions.
 
+When reverse-reconciling an existing JSON story into a design document, treat
+the complete JSON as the content authority and modify only the design document.
+Describe the premise, cast, world, relationships, arcs, progression, choices,
+and consequences in human-readable prose. Do not turn the document into schema
+documentation or an objective-by-objective transcription. Include enough
+content to reconstruct a substantially similar story, and report contradictions
+between the JSON and existing document instead of silently choosing one version.
+
 Before writing objectives for a serious story, produce a compact plot outline
 or story design document with the premise, player fantasy, emotional targets,
 world hook, beginning, midpoint or reevaluation moment, climax, ending choices
@@ -512,7 +520,7 @@ with rollback and choice support.
     Make the non-player cast gender-flexible by default. Mark intended romantic
     interests `romanceable: true`, use the 40% male / 40% female / 20% futanari
     canonical distribution as the default across those characters, and provide
-    opposite male/non-male fallback names and outfits when useful. The runtime
+    complete opposite male/non-male fallback names and outfits. The runtime
     performs preference adaptation; the authored personality, appearance, role,
     plot function, and relationship arc must remain coherent in every gender.
 19. Run the publish-as-is pass: assume the user will import or publish the
@@ -4004,9 +4012,9 @@ and the story intentionally requires Character Library selection.
   romanceable unless their role provides a concrete reason not to be.
 
 - Gender-flexible characters keep their canonical `name`, `gender`, `outfits`,
-  and `starting_outfit_id`, with optional `fallback_name`, `fallback_outfits`,
-  and `fallback_starting_outfit_id` for the same character's opposite
-  male/non-male presentation. Do not create aliases lists. Prefer fallback names
+  and `starting_outfit_id`, and require `fallback_name`, nonempty
+  `fallback_outfits`, and `fallback_starting_outfit_id` for the same character's
+  opposite male/non-male presentation. Do not create aliases lists. Prefer fallback names
   that retain at least the first letter, and preferably the first two letters,
   of the canonical name, but always prefer a natural, setting-appropriate name
   over a strained copy. Fallback outfits must preserve each canonical outfit's
@@ -4015,7 +4023,10 @@ and the story intentionally requires Character Library selection.
   unless a larger change is specifically justified. Appearance, personality,
   facts, and relationships stay unchanged. A canonical futanari
   character may additionally use `fallback_gender: "male"` or `"female"`;
-  split these evenly across a cast. Missing fallback fields are valid.
+  split these evenly across a cast. Treat the three fallback presentation fields
+  as one atomic group and ensure the fallback starting id references a fallback
+  outfit. Because profiles may enable swap-all adaptation, provide this complete
+  group for every full non-player character, including `romanceable: false`.
 
 - When migrating an existing cast, preserve identity. If an existing female
   character becomes canonical male, move the original female name, outfits,
@@ -4028,8 +4039,18 @@ and the story intentionally requires Character Library selection.
   appearance, personality, facts, role, stats, relationships, or inventory merely
   because the canonical gender presentation changed.
 
-- For generated romanceable job/story casts, use a deterministic base mix of
-  40% male, 40% female, and 20% futanari. For generated non-romanceable job
+- Apply the character skill's same boldness scale to every gender. Boldness is
+  romantic or sexual initiative and directness; aggression, confidence,
+  exhibitionism, and dominant/submissive dynamics are separate traits. Gender
+  adaptation never changes any of them.
+
+- Across every romanceable definition in every story container, including the
+  starting party, NPC directory, future cast, shops, heroes, antagonists, and
+  other embedded definitions, use a deterministic base mix of 40% male, 40%
+  female, and 20% futanari. For casts not divisible by five, assign the stable
+  authored order through the repeating sequence `male`, `female`, `male`,
+  `female`, `futanari`; this gives deterministic rounding and the exact 40/40/20
+  ratio for every complete group of five. For generated non-romanceable job
   characters, use 50% male and 50% female. Runtime adapts romanceable characters
   to the active player's preferred genders, or all non-player characters when
   the profile's swap-all setting is enabled. Never adapt the player character.
@@ -5031,8 +5052,11 @@ Use this before finalizing a story template.
 - If the intended player is submissive, shy, or unlikely to initiate, romantic
   leads have objective/completion-instruction support to flirt, invite, tempt,
   court, or come onto the player while preserving explicit choice.
-- Romance-first casts use the canonical 40% male / 40% female / 20% futanari
-  mix and remain coherent after runtime preference adaptation.
+- Every full non-player character in every story container has a complete
+  opposite male/non-male fallback presentation so both romanceable adaptation
+  and profile-level swap-all remain
+  coherent. The entire romanceable cast uses the canonical 40% male / 40% female
+  / 20% futanari mix with deterministic rounding.
 - No objective chain expects one player message to complete multiple
   consecutive objectives; EmberAdventures checks one selected objective at a time.
 - Relationship progress that should be deterministic uses `adjust_relationship`
