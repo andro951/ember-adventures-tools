@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.12`.
+Current skill version: `1.0.13`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -133,8 +133,21 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "romanceable": true,
     "gender": "female",
     "fallback_name": "Fallback Name",
-    "fallback_outfits": [],
-    "fallback_starting_outfit_id": "",
+    "fallback_outfits": [
+      {
+        "id": "default",
+        "name": "Default",
+        "clothing": {
+          "undershirt": "light cotton undershirt",
+          "shirt": "plain travel shirt",
+          "pants": "plain travel trousers",
+          "underwear": "plain comfortable underwear",
+          "socks": "plain travel socks",
+          "feet": "simple boots"
+        }
+      }
+    ],
+    "fallback_starting_outfit_id": "default",
     "age": 25,
     "role": "Short role",
     "personality_description": "Durable personality and behavior summary.",
@@ -211,6 +224,28 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       "negative_prompt": "",
       "note": "",
       "male": false
+    },
+    "profile_image_presentations": {
+      "male": {
+        "url": "",
+        "local_image_id": "",
+        "source": "none",
+        "seed": null,
+        "prompt": "",
+        "negative_prompt": "",
+        "note": "",
+        "male": true
+      },
+      "non_male": {
+        "url": "",
+        "local_image_id": "",
+        "source": "none",
+        "seed": null,
+        "prompt": "",
+        "negative_prompt": "",
+        "note": "",
+        "male": false
+      }
     },
     "profile_images": {
       "active_image_id": "",
@@ -291,7 +326,7 @@ inventory, and durable facts.
 
 - `romanceable`: Required boolean. Use `true` when the character is an intended potential romantic or sexual interest. Use `false` intentionally for plot-only officials, incidental contacts, antagonists, or other characters who should not normally adapt to the player's preferred romantic genders. Most recurring AI-created characters should be romanceable unless their story function gives a concrete reason not to be. Player characters are never gender-adapted from this field.
 
-- `fallback_name`, `fallback_outfits`, and `fallback_starting_outfit_id`: One atomic opposite male/non-male presentation group for the same character. The canonical `name`, `gender`, `outfits`, and `starting_outfit_id` remain the normal definition. A fixed-presentation standalone library character may omit the entire fallback group, but never provide only part of it. Gender-flexible story characters must provide all three fields; the story skill defines that stronger requirement. Supply only one `fallback_name`; never create a name-alias list. A male canonical character uses the fallback for a non-male presentation, while a female or futanari canonical character uses it for a male presentation. Prefer a fallback name that retains at least the first letter, and preferably the first two letters, of the canonical name so the character remains recognizable. A natural, setting-appropriate authored name is more important than preserving letters when that would make the result strained. Fallback outfits must be nonempty and remain recognizable equivalents: preserve each outfit's purpose, colors, equipment, status, and general visual identity while changing only gendered construction, underwear, fit, and similar presentation details unless a larger change is specifically justified. `fallback_starting_outfit_id` must reference one of those outfits. Appearance, personality, facts, relationships, and all other identity fields remain unchanged.
+- `fallback_name`, `fallback_outfits`, and `fallback_starting_outfit_id`: Required atomic opposite male/non-male presentation group for the same character. The canonical `name`, `gender`, `outfits`, and `starting_outfit_id` remain the normal definition. Every reusable character must provide all three fields so local and public libraries can show only a presentation allowed by the active profile. Supply only one `fallback_name`; never create a name-alias list. A male canonical character uses the fallback for a non-male presentation, while a female or futanari canonical character uses it for a male presentation. Prefer a fallback name that retains at least the first letter, and preferably the first two letters, of the canonical name so the character remains recognizable. A natural, setting-appropriate authored name is more important than preserving letters when that would make the result strained. Fallback outfits must be nonempty and remain recognizable equivalents: preserve each outfit's purpose, colors, equipment, status, and general visual identity while changing only gendered construction, underwear, fit, and similar presentation details unless a larger change is specifically justified. `fallback_starting_outfit_id` must reference one of those outfits. Appearance, personality, facts, relationships, and all other identity fields remain unchanged. Local import may continue after an explicit warning when this group is missing; public publishing rejects the character until it is complete.
 
 - `fallback_gender`: Optional only for a canonical futanari character. Use exactly `"male"` or `"female"` to decide which presentation is used when the player's selected preferences include male and female but not futanari. Omit it for non-futanari characters. Across a generated cast, split futanari fallback genders evenly so a 40% male / 40% female / 20% futanari base distribution becomes 50/50 when only male and female are preferred.
 
@@ -541,7 +576,9 @@ agency.
 
 - `default_profile_image.male`: Required boolean profile-presentation metadata. Use `true` only for a male or trans-male presentation. Use `false` for female, futanari, non-binary, and every other non-male presentation. Female and futanari profile images intentionally share the non-male bucket. For a blank authored slot, initialize this from the canonical character presentation. For a configured image, describe the presentation actually shown by that image, even when it is the character's fallback rather than canonical presentation. Never infer this value later from the character's current gender.
 
-A character needs at least one real profile image before public publishing. Its configured `default_profile_image` may represent either the canonical or fallback presentation, but it must include a resolving hosted `url` and explicit `male` metadata. Authors do not need to pre-generate both presentations. EmberAdventures may generate and retain a missing presentation during play. At runtime, a profile image is eligible only when its `male` value matches the character's active male/non-male presentation; never display the opposite bucket as a fallback. This metadata applies only to profile images. Normal/full-body, group, story, item, outfit, title-card, and other images must not receive a `male` field.
+- `profile_image_presentations`: Application-managed pair of default profile-image slots named `male` and `non_male`. Each slot uses the same shape as `default_profile_image`; `male.male` must be `true` and `non_male.male` must be `false`. Character-creation AIs emit both blank slots exactly as shown and never invent URLs, local ids, prompts, or seeds. EmberAdventures fills them when images are generated or selected.
+
+A character needs one real resolving hosted profile image for the male presentation and one for the non-male presentation before public publishing. Both `profile_image_presentations.male.url` and `profile_image_presentations.non_male.url` must resolve as images, and the character must also have the required alternate name/outfit group. Local import warns about missing presentation data and lets the player cancel or continue; public publishing is a hard rejection until every requirement is complete. `default_profile_image` remains the canonical/default presentation slot and should match one of the two presentation slots once the app has populated them. At runtime, a profile image is eligible only when its `male` value matches the character's active male/non-male presentation; never display the opposite bucket as a fallback. This metadata applies only to profile images. Normal/full-body, group, story, item, outfit, title-card, and other images must not receive a `male` field.
 
 - `created_at`: Required ISO 8601 timestamp for when this definition was first created. Use the actual creation time for new entries; never leave it blank or use an empty placeholder. Preserve it unchanged when editing an existing definition.
 
