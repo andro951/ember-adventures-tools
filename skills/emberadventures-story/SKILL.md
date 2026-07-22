@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.21`.
+Current skill version: `1.0.22`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -4005,10 +4005,27 @@ and the story intentionally requires Character Library selection.
 - Gender-flexible characters keep their canonical `name`, `gender`, `outfits`,
   and `starting_outfit_id`, with optional `fallback_name`, `fallback_outfits`,
   and `fallback_starting_outfit_id` for the same character's opposite
-  male/non-male presentation. Do not create aliases lists. Appearance,
-  personality, facts, and relationships stay unchanged. A canonical futanari
+  male/non-male presentation. Do not create aliases lists. Prefer fallback names
+  that retain at least the first letter, and preferably the first two letters,
+  of the canonical name, but always prefer a natural, setting-appropriate name
+  over a strained copy. Fallback outfits must preserve each canonical outfit's
+  purpose, colors, equipment, status, and general visual identity while changing
+  only gendered construction, underwear, fit, and similar presentation details
+  unless a larger change is specifically justified. Appearance, personality,
+  facts, and relationships stay unchanged. A canonical futanari
   character may additionally use `fallback_gender: "male"` or `"female"`;
   split these evenly across a cast. Missing fallback fields are valid.
+
+- When migrating an existing cast, preserve identity. If an existing female
+  character becomes canonical male, move the original female name, outfits,
+  and starting outfit id into `fallback_name`, `fallback_outfits`, and
+  `fallback_starting_outfit_id`, then author a natural canonical male name and
+  equivalent male outfits. If she remains canonical female, preserve her current
+  name and outfits and add a male fallback. If she becomes canonical futanari,
+  preserve the current non-male presentation as canonical, add a male fallback,
+  and distribute `fallback_gender` evenly across the futanari cast. Never alter
+  appearance, personality, facts, role, stats, relationships, or inventory merely
+  because the canonical gender presentation changed.
 
 - For generated romanceable job/story casts, use a deterministic base mix of
   40% male, 40% female, and 20% futanari. For generated non-romanceable job
@@ -4016,9 +4033,19 @@ and the story intentionally requires Character Library selection.
   to the active player's preferred genders, or all non-player characters when
   the profile's swap-all setting is enabled. Never adapt the player character.
 
-- `appearance.penis_size` is optional and, when present, must be an integer
-  from 0 to 10. It is ignored unless the current gender is male or futanari. Do
-  not create a missing default for female or unsupported genders.
+- `gender` is the sole source of gender mechanics. `male`, `trans male`, and
+  `trans-male` use the male bucket. `futa` and `futanari` identify futanari
+  characters, which otherwise use the female bucket except for penis-specific
+  behavior. Every other gender value uses the female bucket. Never infer gender
+  from kink tags, tags, sexual preferences, appearance prose, role, or any other
+  field. Import and publish validation reject exact futa/futanari metadata on a
+  character whose `gender` is not futa or futanari.
+
+- `appearance.penis_size` is required on every player and non-player character
+  definition and must be an intentional integer from 0 to 10. This includes
+  female, non-binary, futanari, male, non-romanceable, and other characters.
+  Runtime ignores it unless the current presentation is male or futanari, but
+  the field must already exist because runtime adaptation can change presentation.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
 
