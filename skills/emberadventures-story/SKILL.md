@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.17`.
+Current skill version: `1.0.18`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -658,7 +658,7 @@ Story exports use this wrapper:
           "left_hand": null
         },
         "starting_inventory": [],
-        "durable_known_facts": [],
+        "starting_known_facts": [],
         "default_seed": 0,
         "image_prompt_config": {
           "seed_enabled": true,
@@ -2538,6 +2538,62 @@ avoid repeated reward JSON; use `state.reward_bundles` for fixed deduplication
 and `state.reward_templates` when the repeated behavior needs typed character-id
 or path parameters.
 
+### Definition Fields Versus Runtime State
+
+Character objects inside a story definition use immutable starting/default
+fields. Starting a playthrough copies those values into separate mutable runtime
+fields. Objective, choice, route, shop-purchase, reward-bundle, and reward-template
+rewards must update the runtime fields. They must never rewrite the reusable
+definition defaults.
+
+The main character-field mappings are:
+
+| Definition field | Mutable runtime field |
+| --- | --- |
+| `starting_relationship_to_player` | `relationship_to_player` |
+| `starting_trust` | `trust` |
+| `starting_attraction` | `attraction` |
+| `starting_affection` | `affection` |
+| `starting_arousal` | `arousal` |
+| `starting_state_of_mind` | `state_of_mind` |
+| `starting_physical_state` | `physical_state` |
+| `starting_pose` | `pose` |
+| `starting_held_items` | `held_items` |
+| `starting_inventory` | `inventory` |
+| `starting_known_facts` | `known_facts` |
+| `starting_outfit_id` plus `outfits` | `active_outfit_id` plus `clothing` |
+| `default_seed`, `image_prompt_config`, `default_profile_image` | generated runtime image state |
+
+`starting_known_facts` is only the reusable list copied into `known_facts` when
+the game starts. Any fact learned, revealed, remembered, or changed during play
+belongs in runtime `known_facts`. Use an `add_state_list_item` reward with
+`path: ["player", "known_facts"]` for the player, or target a character and use
+`field_path: ["known_facts"]`. Never target `starting_known_facts`.
+
+Valid generic runtime reward targets include existing fields under
+`player`, a resolved character's runtime state, `story_inventory`,
+`world_flags`, `scene`, `story_memory`, and other authored mutable state. List
+rewards require an existing array target. Numeric rewards require an existing
+numeric target. Prefer dedicated rewards such as `adjust_relationship`,
+`adjust_story_inventory`, `grant_outfit`, `equip_outfit`, image rewards, and
+objective start/completion rewards whenever one owns the operation.
+
+Invalid reward targets include:
+
+- every `starting_*` field;
+- every `default_*` field;
+- `state.players`, because it is the reusable player-option definition list;
+- the removed `durable_known_facts` field;
+- a definition's immutable `outfits` array when the intended action is granting
+  or equipping runtime clothing;
+- any missing path, non-list target used by a list reward, or nonnumeric target
+  used by a numeric reward.
+
+Story import and publication validation reject invalid reward paths. Runtime
+reward application also preflights the complete reward transaction before any
+reward is applied or logged. Do not depend on a later reward failure to undo an
+earlier malformed reward; author every path against the live runtime shape.
+
 Reward bundle ids must be stable, descriptive slugs. Good examples:
 `reward-pack-rescue-earned-trust`, `reward-pack-failed-city-defense`,
 `reward-pack-choose-forest-route`. Avoid vague ids such as `reward-1` or
@@ -3548,7 +3604,7 @@ verbatim copy of Codex process instructions.
   ```json
   {
     "role": "story-specific role",
-    "durable_known_facts_to_add": [],
+    "starting_known_facts_to_add": [],
     "starting_inventory": [],
     "stats": {},
     "starting_held_items": {
@@ -3566,8 +3622,8 @@ verbatim copy of Codex process instructions.
   ```
 
   `role` replaces the selected character's role for this playthrough.
-  `durable_known_facts_to_add` is the only additive field: its entries are
-  appended without exact duplicates to both durable and current runtime known
+  `starting_known_facts_to_add` is the only additive field: its entries are
+  appended without exact duplicates to both starting and current runtime known
   facts. `starting_inventory`, `stats`, and `starting_held_items` replace the
   selected character's corresponding definition defaults and current runtime
   values. The three `starting_*` condition fields replace both their immutable
@@ -3823,9 +3879,9 @@ and the story intentionally requires Character Library selection.
 - `player.starting_inventory`: Immutable/default starting inventory array. Do
   not author active `inventory` in a clean reusable story definition.
 
-- `player.known_facts`: Legacy/runtime field. Do not include active
-  `known_facts` in clean story definitions. Put durable player facts in
-  `durable_known_facts`.
+- `player.known_facts`: Mutable runtime field. Do not include active
+  `known_facts` in clean story definitions. Put starting player facts in
+  `starting_known_facts`.
 
 - Character-definition-style starting fields such as outfits, starting outfit,
   boldness, starting relationship meters, default image config, and default
@@ -3856,7 +3912,7 @@ and the story intentionally requires Character Library selection.
 - Every `players[]` entry must use the same immutable/default character
   definition shape as `state.player`: real `name`, integer `age`, `gender`,
   `role`, durable `personality_description`, durable `speech_style`, appearance,
-  outfits, `starting_inventory`, `durable_known_facts`, blank image defaults,
+  outfits, `starting_inventory`, `starting_known_facts`, blank image defaults,
   and `voice: null`.
 
 - Do not include `power` while progression is shelved. It is not part of clean
@@ -3889,7 +3945,7 @@ and the story intentionally requires Character Library selection.
 
 - Each value must use the immutable/default character-definition shape from
   `EmberAdventures Character`. Use `starting_*` fields and
-  `durable_known_facts`; do not author current relationship meters, arousal,
+  `starting_known_facts`; do not author current relationship meters, arousal,
   pose, clothing, inventory, known facts, or image history.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
@@ -4024,7 +4080,7 @@ and the story intentionally requires Character Library selection.
   contain scheduling/process instructions such as `Should not appear before X`
   or `Introduce only after Y`. Put timing in `requires`, objective rewards,
   `meet_condition`, `join_condition`, or hidden future-cast notes, not in
-  character `known_facts`/`durable_known_facts`.
+  character `known_facts`/`starting_known_facts`.
 
 - `future_cast.items[id].profile_images`, `images`: Legacy/import-tolerated image
   history arrays on the future-cast shell. Do not generate them in new clean
@@ -4099,7 +4155,7 @@ and the story intentionally requires Character Library selection.
 
 - Objective `rewards`: Array of reward objects or reward bundle references. Current reward examples include future-cast introduction, future-cast promotion to party, shared bundle references, and supported travel/location reveal behavior. Future-character rewards must use `character_id` equal to an existing `future_cast.items` object key. Do not use old reward bucket objects such as `rewards.unlock_locations`, `rewards.introduce_future_characters`, or `rewards.story_rules`; convert each bucket entry into a normal reward object. Do not use XP, level, rank, or progression-skill rewards while the progression system is shelved. Rewards should be hidden from ordinary narrator prompts unless reward handling needs them.
 
-Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character.
+Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
 
 - Objective `requires`: Array of prerequisite objective ids. Use at least one example in templates where appropriate. Do not use step fields.
 

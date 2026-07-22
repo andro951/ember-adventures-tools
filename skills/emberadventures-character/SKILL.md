@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.4`.
+Current skill version: `1.0.6`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -72,7 +72,7 @@ Never copy creator instructions into character fields. Timing instructions,
 future-party scheduling, objective rewards, prompt-only notes, and explanations
 of how EmberAdventures uses a field belong in story structures, todo/review notes, or
 skill guidance, not in `role`, `personality_description`,
-`speech_style`, `durable_known_facts`, outfits, image defaults, or visible metadata.
+`speech_style`, `starting_known_facts`, outfits, image defaults, or visible metadata.
 
 Before final export, do a player-facing visibility pass. Character definitions
 can be shown in public/local libraries, editor views, definition panels, and
@@ -85,7 +85,7 @@ dialogue style, relationship outcomes, or actions.
 
 Before final export, run a character-depth pass. A final character definition
 must be useful in EmberAdventures, not just technically valid. Important player
-characters, party members, and major NPCs need concrete `durable_known_facts`
+characters, party members, and major NPCs need concrete `starting_known_facts`
 covering identity, role, personality under pressure, combat/usefulness or social
 usefulness, household/social role when relevant, quirks/preferences,
 relationship dynamics, and at least one story/concept-specific complication or
@@ -187,7 +187,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       "left_hand": null
     },
     "starting_inventory": [],
-    "durable_known_facts": [],
+    "starting_known_facts": [],
     "default_seed": 0,
     "image_prompt_config": {
       "seed_enabled": true,
@@ -429,7 +429,7 @@ must not add invented slot-specific exposure prose.
 
 - `starting_inventory`: Array of starting inventory item strings or structured item objects if the item needs metadata. Use examples like `"Coin pouch"` or `{ "name": "Silver key", "note": "Opens the guild side door" }`. Do not store items gained during play here.
 
-- `durable_known_facts`: Array of durable facts the character definition starts with. Use concise strings. These are not chat history and not current scene memory. Avoid future spoilers unless the prompt projection system will hide them until relevant. For public/standalone character definitions, prefer facts safe for library/editor display; put story-only secrets in hidden story objectives, future cast notes, or private prompt projections instead.
+- `starting_known_facts`: Array of facts copied into mutable runtime `known_facts` when a new playthrough starts. Use concise strings. This is definition data, not chat history, current scene memory, or a field that changes during play. Avoid future spoilers unless the prompt projection system will hide them until relevant. For public/standalone character definitions, prefer facts safe for library/editor display; put story-only secrets in hidden story objectives, future cast notes, or private prompt projections instead.
 
 - `stats`: Optional object of game-specific integer stats. Keys are authored,
   readable stable identifiers such as `strength`, `agility`, `mana`,
@@ -1345,7 +1345,7 @@ image-prompt guidance without adding alternate clothing fields.
   definition is incomplete when the intended character also wears underwear,
   a bra, undershirt, socks, or other removable layers. Omit a layer only when
   the character intentionally is not wearing it in that outfit.
-- Use `starting_inventory`, `durable_known_facts`, and `starting_held_items` to make the character concrete and usable in game. Keep image metadata blank.
+- Use `starting_inventory`, `starting_known_facts`, and `starting_held_items` to make the character concrete and usable in game. Keep image metadata blank.
 - Clothing slots strongly influence EmberAdventures image generation. Do not put lingerie-coded items in `bra`, `underwear`, `shirt`, `skirt`, or `back` unless the intended outfit is skimpy.
 - If the user wants a dressed character, avoid values like `thong`, `bikini`, `bra top`, `skirt panels`, `plunging bodice`, or `cape over lingerie`. Use full garments such as tunic, robe, coat, dress, armor, pants, shorts, bodysuit, mantle, apron, or layered wraps.
 - Negative image prompt wording cannot reliably overcome skimpy clothing slots. Fix the clothing slots first.
