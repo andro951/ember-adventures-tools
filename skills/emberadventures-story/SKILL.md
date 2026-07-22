@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.19`.
+Current skill version: `1.0.21`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -268,6 +268,13 @@ Ask the questions that make the story unique:
   and cast definitions; do not store a separate preference field in story JSON.
 - If NSFW, is sexual content a central fantasy, an optional reward, a romantic
   payoff, a danger/temptation, or mostly background spice?
+- If the story contains romance or sexual content, is the intended player role
+  `dominant`, `submissive`, or `switch`? Record this decision in the story
+  design document. `dominant` means the player is expected to lead;
+  `submissive` means every intended romantic interest needs authored chances to
+  initiate; `switch` means more dominant interests initiate while more
+  submissive interests normally wait for the player. A shy interest may still
+  initiate indirectly. This is planning guidance, not blanket consent.
 
 For substantial stories, the main work product during creation should be a
 human-readable story design document, not immediate JSON. Build and revise that
@@ -2412,6 +2419,28 @@ refusal, trust, protection, apology, jealousy, vulnerability, privacy, distance,
 or desire. Do not make relationship progression only implicit narrator prose
 when the relationship affects future play.
 
+### Romantic Advance Choice Pattern
+
+For a `submissive` player-role story, give every intended romantic interest at
+least one scene where that character initiates a meaningful romantic or sexual
+advance. For a `switch` story, use this pattern for interests whose personality
+is more dominant; do not force it onto deliberately submissive interests. A
+`dominant` player-role story does not require NPC-initiated advance objectives.
+
+Resolve the advance with a normal player choice objective. Adapt wording to the
+scene while preserving these six functional reactions:
+
+1. Enthusiastically reciprocate.
+2. Accept and let them lead.
+3. React with surprised interest.
+4. Ask them to slow down.
+5. Politely decline.
+6. Reject the advance strongly.
+
+The selected response applies only to the current advance. It is never blanket
+consent for later escalation. Keep refusal routes playable and in character;
+do not punish the player merely for declining intimacy.
+
 For romance-first stories, audit the cast mix. Unless the user asks for a
 single-gender cast, include potential love interests and recurring social
 characters across men, women, and any requested special gender/anatomy types
@@ -3689,7 +3718,7 @@ verbatim copy of Codex process instructions.
 
   Approved genre tags are: `anime`, `fantasy`, `sci-fi`, `modern`, `historical`, `romance`, `adventure`, `action`, `comedy`, `drama`, `mystery`, `thriller`, `horror`, `dark`, `cozy`, `slice of life`, `superpower`, `isekai`, `school`, `workplace`, `political`, `war`, `crime`, `mythology`, `supernatural`, `post-apocalyptic`, `western`, `cyberpunk`, `steampunk`, `harem`.
 
-- `kink_tags`: Public-library discovery metadata for content the story intentionally supports or guarantees. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Copy this exact array to `state.meta.kink_tags`; the two arrays must be identical. Use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
+- `kink_tags`: Public-library discovery metadata for content the story intentionally supports or guarantees. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A companion's behavior or preference alone does not justify the opposite player-perspective tag. Copy this exact array to `state.meta.kink_tags`; the two arrays must be identical. Use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
   - **Power Exchange:** `dominance`, `submission`, `switching`, `owning partners`, `being owned`, `serving partners`, `being served`, `disciplining partners`, `being disciplined`, `punishing partners`, `being punished`, `training partners`, `being trained`, `brat taming`, `being a brat`, `using partners freely`, `being freely used`, `taking control in cnc`, `being overpowered in cnc`, `hypnotizing partners`, `being hypnotized`, `mind controlling partners`, `being mind controlled`, `corrupting partners`, `being corrupted`, `financial domination`, `financial submission`.
   - **Bondage And Restraint:** `bondage`, `binding partners`, `being bound`, `collaring partners`, `wearing a collar`, `leashing partners`, `being leashed`, `gagging partners`, `being gagged`, `blindfolding partners`, `being blindfolded`, `sensory depriving partners`, `being sensory deprived`, `enforcing chastity`, `wearing chastity`, `denying partners orgasms`, `being denied orgasm`, `forcing partners to orgasm`, `being forced to orgasm`.
   - **Impact And Pain:** `spanking partners`, `being spanked`, `slapping partners`, `being slapped`, `whipping partners`, `being whipped`, `flogging partners`, `being flogged`, `paddling partners`, `being paddled`, `caning partners`, `being caned`, `pulling hair`, `having hair pulled`, `biting partners`, `being bitten`, `scratching partners`, `being scratched`, `choking partners`, `being choked`, `sadism`, `masochism`.
@@ -3934,6 +3963,11 @@ and the story intentionally requires Character Library selection.
 
 - Opening messages for multi-player-select stories should be written so they work for any selected protagonist, or should refer to the selected character generically by role/title. Do not assume the fallback player name unless every option shares that name.
 
+- Voice/speaker tags for a gender-flexible non-player character may use exactly
+  either that definition's `name` or `fallback_name`. Both resolve to the same
+  runtime character. Do not author any additional name aliases and do not rely
+  on broad prose replacement.
+
 - For arbitrary-player stories, write opening messages with `{player_name}` and
   avoid assumptions about gender, body, appearance, personality, personal
   history, or preexisting relationships unless the story supplies the required
@@ -3959,6 +3993,31 @@ and the story intentionally requires Character Library selection.
   `EmberAdventures Character`. Use `starting_*` fields and
   `starting_known_facts`; do not author current relationship meters, arousal,
   pose, clothing, inventory, known facts, or image history.
+
+- Every full non-player character definition requires `romanceable: true` or
+  `romanceable: false`. Use true for intended potential romantic or sexual
+  interests. Use false intentionally for plot-only officials, incidental
+  contacts, antagonists, or characters who should not normally adapt to the
+  player's preferred romantic genders. Most recurring characters should be
+  romanceable unless their role provides a concrete reason not to be.
+
+- Gender-flexible characters keep their canonical `name`, `gender`, `outfits`,
+  and `starting_outfit_id`, with optional `fallback_name`, `fallback_outfits`,
+  and `fallback_starting_outfit_id` for the same character's opposite
+  male/non-male presentation. Do not create aliases lists. Appearance,
+  personality, facts, and relationships stay unchanged. A canonical futanari
+  character may additionally use `fallback_gender: "male"` or `"female"`;
+  split these evenly across a cast. Missing fallback fields are valid.
+
+- For generated romanceable job/story casts, use a deterministic base mix of
+  40% male, 40% female, and 20% futanari. For generated non-romanceable job
+  characters, use 50% male and 50% female. Runtime adapts romanceable characters
+  to the active player's preferred genders, or all non-player characters when
+  the profile's swap-all setting is enabled. Never adapt the player character.
+
+- `appearance.penis_size` is optional and, when present, must be an integer
+  from 0 to 10. It is ignored unless the current gender is male or futanari. Do
+  not create a missing default for female or unsupported genders.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
 
@@ -4011,6 +4070,9 @@ and the story intentionally requires Character Library selection.
   the player can currently know.
 
 - `full_character`: Full character definition for inspected/opening important NPCs. Use the current app field names while preserving the immutable/default intent from the character definition contract. Do not make a separate "inspected NPC definition" type.
+
+  The same required `romanceable` and optional gender-fallback fields described
+  for `state.characters` apply here and to every future-cast full character.
 
   Full character payloads must be rich enough for play. Main party members and
   important NPCs usually need multiple concrete durable facts, not one generic

@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.7`.
+Current skill version: `1.0.9`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -130,7 +130,11 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "nsfw": true,
     "loli": false,
     "can_die": false,
+    "romanceable": true,
     "gender": "female",
+    "fallback_name": "Fallback Name",
+    "fallback_outfits": [],
+    "fallback_starting_outfit_id": "",
     "age": 25,
     "role": "Short role",
     "personality_description": "Durable personality and behavior summary.",
@@ -157,6 +161,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       "waist": 5,
       "legs": 5,
       "arms": 5,
+      "penis_size": 5,
       "skin_color": "",
       "eye_color": "",
       "hair_color": "",
@@ -283,9 +288,15 @@ inventory, and durable facts.
 
 - `can_die`: Boolean internal plot armor. Use `false` for standalone character-library definitions by default. Story templates may set `can_die` intentionally for embedded story characters. EmberAdventures hides this field from AI prompts; it is not a personality, lore, or player-facing field.
 
+- `romanceable`: Required boolean. Use `true` when the character is an intended potential romantic or sexual interest. Use `false` intentionally for plot-only officials, incidental contacts, antagonists, or other characters who should not normally adapt to the player's preferred romantic genders. Most recurring AI-created characters should be romanceable unless their story function gives a concrete reason not to be. Player characters are never gender-adapted from this field.
+
+- `fallback_name`, `fallback_outfits`, and `fallback_starting_outfit_id`: Optional opposite male/non-male presentation for the same character. The canonical `name`, `gender`, `outfits`, and `starting_outfit_id` remain the normal definition. Supply only one `fallback_name`; never create a name-alias list. A male canonical character uses the fallback for a non-male presentation, while a female or futanari canonical character uses it for a male presentation. Appearance, personality, facts, relationships, and all other identity fields remain unchanged. Missing fallback fields are allowed and never invalidate the character.
+
+- `fallback_gender`: Optional only for a canonical futanari character. Use exactly `"male"` or `"female"` to decide which presentation is used when the player's selected preferences include male and female but not futanari. Omit it for non-futanari characters. Across a generated cast, split futanari fallback genders evenly so a 40% male / 40% female / 20% futanari base distribution becomes 50/50 when only male and female are preferred.
+
 - `genres`: Approved broad genre/search tags for standalone character-library definitions. Do not store this on characters embedded inside story templates; embedded story characters inherit the story's `genres`. Approved values are `anime`, `fantasy`, `sci-fi`, `modern`, `historical`, `romance`, `adventure`, `action`, `comedy`, `drama`, `mystery`, `thriller`, `horror`, `dark`, `cozy`, `slice of life`, `superpower`, `isekai`, `school`, `workplace`, `political`, `war`, `crime`, `mythology`, `supernatural`, `post-apocalyptic`, `western`, `cyberpunk`, `steampunk`, and `harem`.
 
-- `kink_tags`: Optional public-library discovery metadata. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Use only tags intrinsic to this standalone character definition, and use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
+- `kink_tags`: Optional public-library discovery metadata. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A character's behavior or preference alone does not justify the opposite player-perspective tag. Use only tags intrinsic to the interaction this standalone character definition supports, and use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
   - **Power Exchange:** `dominance`, `submission`, `switching`, `owning partners`, `being owned`, `serving partners`, `being served`, `disciplining partners`, `being disciplined`, `punishing partners`, `being punished`, `training partners`, `being trained`, `brat taming`, `being a brat`, `using partners freely`, `being freely used`, `taking control in cnc`, `being overpowered in cnc`, `hypnotizing partners`, `being hypnotized`, `mind controlling partners`, `being mind controlled`, `corrupting partners`, `being corrupted`, `financial domination`, `financial submission`.
   - **Bondage And Restraint:** `bondage`, `binding partners`, `being bound`, `collaring partners`, `wearing a collar`, `leashing partners`, `being leashed`, `gagging partners`, `being gagged`, `blindfolding partners`, `being blindfolded`, `sensory depriving partners`, `being sensory deprived`, `enforcing chastity`, `wearing chastity`, `denying partners orgasms`, `being denied orgasm`, `forcing partners to orgasm`, `being forced to orgasm`.
   - **Impact And Pain:** `spanking partners`, `being spanked`, `slapping partners`, `being slapped`, `whipping partners`, `being whipped`, `flogging partners`, `being flogged`, `paddling partners`, `being paddled`, `caning partners`, `being caned`, `pulling hair`, `having hair pulled`, `biting partners`, `being bitten`, `scratching partners`, `being scratched`, `choking partners`, `being choked`, `sadism`, `masochism`.
@@ -302,6 +313,8 @@ inventory, and durable facts.
 - `age`: Age in number of years as an integer. Do not use ranges, words, unknown, approximate text, or decimals. If the character is intended for adult-content use, the non-loli adult version must be 18 or older.
 
 - `gender`: Character gender/anatomy text. Use clear player-facing wording. Preferred default tags for consistency with the app editor are `"female"`, `"male"`, `"non-binary"`, `"trans female"`, `"trans male"`, `"trans non-binary"`, and `"futanari"`. Free text is allowed when those tags do not accurately describe the character. Anatomy-specific futanari wording belongs in sexual preference phrases, not default character gender tags. Do not use this for voice names or relationship roles.
+
+- `appearance.penis_size`: Optional integer from 0 to 10. Omit it freely. The app ignores it unless the character's current gender is `male` or `futanari`; do not invent or default this field for other genders. `0` is extremely small, `5` is average, and `10` is extreme fantasy scale.
 
 - `role`: General durable description usable as a title, rank, position, profession, specialty, or group/story function. Examples: `"guild registrar"`, `"front-line bruiser"`, `"healer"`, `"merchant queen"`, `"runaway noble"`. Do not write current mood, current pose, or temporary scene action here.
 
