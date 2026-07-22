@@ -260,12 +260,13 @@ Ask the questions that make the story unique:
 - Should the story be sandbox, Telltale-style branching, linear/mostly-linear,
   or simple/short?
 - Which genders should be available among the starting selectable player
-  characters and intentionally represented in the starting cast? Suggest
+  characters? Suggest
   `male`, `female`, and `non-binary` as the general default. For an adult/NSFW
   story, also suggest `futanari` as an optional fourth default when it fits the
   intended audience and premise. Let the user replace, remove, or expand this
   list. Record the decision in planning and implement it through actual player
-  and cast definitions; do not store a separate preference field in story JSON.
+  definitions; non-player cast gender flexibility uses `romanceable` and the
+  fallback presentation fields instead of fixing the cast to this answer.
 - If NSFW, is sexual content a central fantasy, an optional reward, a romantic
   payoff, a danger/temptation, or mostly background spice?
 - If the story contains romance or sexual content, is the intended player role
@@ -508,11 +509,12 @@ with rollback and choice support.
     optional-with-skip choice objectives and narrator instructions that let love
     interests flirt, invite, tempt, court, or come onto the player while
     preserving explicit player choice.
-    Match the romantic and social cast to the user's chosen audience, attraction
-    targets, starting-gender list, and premise. Do not impose a universal gender
-    balance or add a special gender/anatomy type that was not requested or
-    accepted during intake. A deliberately single-gender or narrowly targeted
-    cast is valid when it is part of the intended fantasy.
+    Make the non-player cast gender-flexible by default. Mark intended romantic
+    interests `romanceable: true`, use the 40% male / 40% female / 20% futanari
+    canonical distribution as the default across those characters, and provide
+    opposite male/non-male fallback names and outfits when useful. The runtime
+    performs preference adaptation; the authored personality, appearance, role,
+    plot function, and relationship arc must remain coherent in every gender.
 19. Run the publish-as-is pass: assume the user will import or publish the
     generated file immediately with no manual cherry-picking, no comparison
     against another draft, and no review from another thread/model. If two
@@ -2441,11 +2443,10 @@ The selected response applies only to the current advance. It is never blanket
 consent for later escalation. Keep refusal routes playable and in character;
 do not punish the player merely for declining intimacy.
 
-For romance-first stories, audit the cast mix. Unless the user asks for a
-single-gender cast, include potential love interests and recurring social
-characters across men, women, and any requested special gender/anatomy types
-such as futanari. Balance does not mean identical counts, but the story should
-not feel accidentally limited to one gender.
+For romance-first stories, audit the canonical 40/40/20 distribution and every
+romanceable character's fallback presentation. The runtime may adapt all of
+them to one preferred gender, so no romantic route may depend on the character
+remaining their canonical gender.
 
 ## Player-Facing Title And Control Rules
 
@@ -4981,8 +4982,8 @@ Use this before finalizing a story template.
 - If the intended player is submissive, shy, or unlikely to initiate, romantic
   leads have objective/completion-instruction support to flirt, invite, tempt,
   court, or come onto the player while preserving explicit choice.
-- Romance-first casts include a deliberate gender/anatomy mix unless the user
-  requested a narrow cast.
+- Romance-first casts use the canonical 40% male / 40% female / 20% futanari
+  mix and remain coherent after runtime preference adaptation.
 - No objective chain expects one player message to complete multiple
   consecutive objectives; EmberAdventures checks one selected objective at a time.
 - Relationship progress that should be deterministic uses `adjust_relationship`
