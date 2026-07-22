@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.10`.
+Current skill version: `1.0.11`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -209,7 +209,8 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       "seed": null,
       "prompt": "",
       "negative_prompt": "",
-      "note": ""
+      "note": "",
+      "male": false
     },
     "profile_images": {
       "active_image_id": "",
@@ -537,6 +538,10 @@ agency.
 - `default_profile_image.negative_prompt`: Use `""`.
 
 - `default_profile_image.note`: Use `""`.
+
+- `default_profile_image.male`: Required boolean profile-presentation metadata. Use `true` only for a male or trans-male presentation. Use `false` for female, futanari, non-binary, and every other non-male presentation. Female and futanari profile images intentionally share the non-male bucket. For a blank authored slot, initialize this from the canonical character presentation. For a configured image, describe the presentation actually shown by that image, even when it is the character's fallback rather than canonical presentation. Never infer this value later from the character's current gender.
+
+A character needs at least one real profile image before public publishing. Its configured `default_profile_image` may represent either the canonical or fallback presentation, but it must include a resolving hosted `url` and explicit `male` metadata. Authors do not need to pre-generate both presentations. EmberAdventures may generate and retain a missing presentation during play. At runtime, a profile image is eligible only when its `male` value matches the character's active male/non-male presentation; never display the opposite bucket as a fallback. This metadata applies only to profile images. Normal/full-body, group, story, item, outfit, title-card, and other images must not receive a `male` field.
 
 - `created_at`: Required ISO 8601 timestamp for when this definition was first created. Use the actual creation time for new entries; never leave it blank or use an empty placeholder. Preserve it unchanged when editing an existing definition.
 

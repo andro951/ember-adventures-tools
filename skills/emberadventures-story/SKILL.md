@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.22`.
+Current skill version: `1.0.23`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -684,7 +684,8 @@ Story exports use this wrapper:
           "seed": null,
           "prompt": "",
           "negative_prompt": "",
-          "note": ""
+          "note": "",
+          "male": false
         },
         "profile_images": {
           "active_image_id": "",
@@ -4047,6 +4048,23 @@ and the story intentionally requires Character Library selection.
   Runtime ignores it unless the current presentation is male or futanari, but
   the field must already exist because runtime adaptation can change presentation.
 
+- Every character `default_profile_image` includes required boolean `male`
+  presentation metadata. Use `true` only when the image depicts a male or
+  trans-male presentation. Use `false` for female, futanari, non-binary, and
+  every other non-male presentation; female and futanari intentionally share
+  one profile-image bucket. A story may provide a profile image for either the
+  canonical or fallback presentation, so set this from what the image actually
+  depicts rather than from the character's canonical `gender`. For a blank
+  authored image slot, initialize it from the canonical presentation.
+
+- A profile image is eligible at runtime only when its `male` metadata matches
+  the character's active male/non-male presentation. Never use the opposite
+  presentation as a fallback. Authors need at least one profile image per
+  character for public publishing, but do not need to pre-generate both; the
+  game can generate and retain a missing active presentation during play. The
+  `male` field belongs only to profile images. Never add it to normal/full-body,
+  group, story, item, outfit, title-card, or other image records.
+
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
 
 - Do not duplicate the same person in both `characters` and active NPC containers unless the current app explicitly expects it.
@@ -4838,6 +4856,10 @@ Public hosted stories need enough metadata for Supabase/library search before up
 - required base metadata: `source`, `creation_tool`, approved `genres`, `nsfw`, and `loli`
 - required default image: a real hosted/default `title_card_image.url`; never
   fabricate a URL when no hosted image exists
+- required character images: every embedded full character needs at least one
+  resolving hosted `default_profile_image.url` with explicit boolean
+  `default_profile_image.male`. That image may depict either the canonical or
+  fallback presentation; both presentations are not required before publishing.
 - derived library counts: player-select boolean/count, main objective count, side
   objective count, future character count, starting party member count, and
   starting NPC count
