@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.18`.
+Current skill version: `1.0.19`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -3689,7 +3689,19 @@ verbatim copy of Codex process instructions.
 
   Approved genre tags are: `anime`, `fantasy`, `sci-fi`, `modern`, `historical`, `romance`, `adventure`, `action`, `comedy`, `drama`, `mystery`, `thriller`, `horror`, `dark`, `cozy`, `slice of life`, `superpower`, `isekai`, `school`, `workplace`, `political`, `war`, `crime`, `mythology`, `supernatural`, `post-apocalyptic`, `western`, `cyberpunk`, `steampunk`, `harem`.
 
-- `kink_tags`: Searchable public-library kink/spicy tags. Use only concrete leaf-style phrases that help users find or avoid content, such as `"harem relationships"`, `"slime partners"`, `"magical clothing"`, or `"teasing partners"`. Do not put broad genres here and do not use this as prompt instructions. Keep SFW-safe descriptions free of explicit kink prose; kink tags are metadata for NSFW-capable filtering and adult-appropriate views.
+- `kink_tags`: Public-library discovery metadata for content the story intentionally supports or guarantees. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Copy this exact array to `state.meta.kink_tags`; the two arrays must be identical. Use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
+  - **Power Exchange:** `dominance`, `submission`, `switching`, `owning partners`, `being owned`, `serving partners`, `being served`, `disciplining partners`, `being disciplined`, `punishing partners`, `being punished`, `training partners`, `being trained`, `brat taming`, `being a brat`, `using partners freely`, `being freely used`, `taking control in cnc`, `being overpowered in cnc`, `hypnotizing partners`, `being hypnotized`, `mind controlling partners`, `being mind controlled`, `corrupting partners`, `being corrupted`, `financial domination`, `financial submission`.
+  - **Bondage And Restraint:** `bondage`, `binding partners`, `being bound`, `collaring partners`, `wearing a collar`, `leashing partners`, `being leashed`, `gagging partners`, `being gagged`, `blindfolding partners`, `being blindfolded`, `sensory depriving partners`, `being sensory deprived`, `enforcing chastity`, `wearing chastity`, `denying partners orgasms`, `being denied orgasm`, `forcing partners to orgasm`, `being forced to orgasm`.
+  - **Impact And Pain:** `spanking partners`, `being spanked`, `slapping partners`, `being slapped`, `whipping partners`, `being whipped`, `flogging partners`, `being flogged`, `paddling partners`, `being paddled`, `caning partners`, `being caned`, `pulling hair`, `having hair pulled`, `biting partners`, `being bitten`, `scratching partners`, `being scratched`, `choking partners`, `being choked`, `sadism`, `masochism`.
+  - **Sensation And Edge Play:** `wax play`, `temperature play`, `electrostimulation`, `tickling`, `needle play`, `knife play`, `blood play`.
+  - **Psychological And Verbal:** `humiliating partners`, `being humiliated`, `degrading partners`, `being degraded`, `objectifying partners`, `being objectified`, `writing on partners`, `being written on`, `feminizing partners`, `being feminized`, `bimbofying partners`, `being bimbofied`, `praising partners`, `being praised`, `making partners beg`, `being made to beg`, `worshipping partners`, `being worshipped`, `dirty talk`.
+  - **Roleplay:** `authority figure roleplay`, `subordinate roleplay`, `medical roleplay`, `pet owner`, `being a pet`, `primal predator`, `primal prey`, `uniforms`, `crossdressing`.
+  - **Exposure And Multiple Participants:** `exhibitionism`, `voyeurism`, `public sex`, `group sex`, `participating in gangbangs`, `being gangbanged`, `sharing partners`, `being shared`, `watching partners with others`, `being watched with others`, `cuckolding partners`, `being cuckolded`, `swinging`, `double penetration`.
+  - **Sexual Activities:** `penetrating partners anally`, `receiving anal`, `masturbation`, `using toys on partners`, `partners using toys`, `fisting partners`, `being fisted`, `pegging partners`, `being pegged`, `rimming partners`, `being rimmed`, `sitting on partners' faces`, `being facesat`, `giving titjobs`, `receiving titjobs`, `giving thighjobs`, `receiving thighjobs`, `giving creampies`, `receiving creampies`, `cum play`, `squirting`, `lactation`, `breeding partners`, `being bred`, `impregnating partners`, `being impregnated`, `being rough with partners`, `partners being rough`, `clothed sex`.
+  - **Fantasy:** `using tentacles`, `receiving tentacles`, `futanari`, `transforming partners`, `being transformed`, `oviposition giving`, `oviposition receiving`.
+  - **Fantasy Partners:** `angels`, `demons`, `succubi and incubi`, `vampires`, `werewolves`, `demi-humans`, `anthropomorphic characters`, `monsters`, `aliens`, `androids`, `robots`, `elves`, `dark elves`, `orcs`, `goblins`, `dragons`, `fairies`, `merfolk`, `centaurs`, `minotaurs`, `lamias`, `harpies`, `arachne`, `ghosts`, `undead`, `shapeshifters`, `living dolls`, `golems`, `elementals`, `deities`.
+  - **Materials And Clothing:** `latex`, `leather`, `lingerie`.
+  - **Fluids And Functions:** `watersports`, `scat`, `spit`, `sweat`, `food play`.
 
 - `nsfw`: Boolean declaring whether the story template itself is unsafe or
   inherently adult in SFW mode because its premise, opening state, required
