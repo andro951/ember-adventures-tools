@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.30`.
+Current skill version: `1.0.31`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -4055,6 +4055,17 @@ and the story intentionally requires Character Library selection.
   either that definition's `name` or `fallback_name`. Both resolve to the same
   runtime character. Do not author any additional name aliases and do not rely
   on broad prose replacement.
+
+- In authored prose fields that mention another character by name, use explicit
+  character reference tokens instead of hardcoding either presentation name:
+  `{character:stable-character-id}`. This includes relationship text, known
+  facts, opening narration, objective titles/summaries/criteria, choice text,
+  shop/job descriptions, scene summaries, story rules, and memory entries. The
+  UI and runtime prompts resolve the token to the active gender presentation
+  name. Example: `"Married to {character:daniel-mercer}."`. Do not use tokens
+  in structured state lists that already store entity ids/names, such as
+  `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
+  `scene.speak_targets`, reward `character_id`, or objective ids.
 
 - For arbitrary-player stories, write opening messages with `{player_name}` and
   avoid assumptions about gender, body, appearance, personality, personal
