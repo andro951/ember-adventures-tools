@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.26`.
+Current skill version: `1.0.27`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -2660,7 +2660,7 @@ The main character-field mappings are:
 `starting_known_facts` is only the reusable list copied into `known_facts` when
 the game starts. Any fact learned, revealed, remembered, or changed during play
 belongs in runtime `known_facts`. Use an `add_state_list_item` reward with
-`path: ["player", "known_facts"]` for the player, or target a character and use
+`field_path: ["player", "known_facts"]` for the player, or target a character and use
 `field_path: ["known_facts"]`. Never target `starting_known_facts`.
 
 Valid generic runtime reward targets include existing fields under
@@ -2686,6 +2686,16 @@ Story import and publication validation reject invalid reward paths. Runtime
 reward application also preflights the complete reward transaction before any
 reward is applied or logged. Do not depend on a later reward failure to undo an
 earlier malformed reward; author every path against the live runtime shape.
+
+For `add_state_list_item` and `remove_state_list_item`, prefer `field_path` for
+ordinary state paths. Use `target` plus `field_path` only when the list belongs
+to a resolved character/NPC rather than directly to story state. The destination
+must already exist as an array in the authored starting state before import; do
+not expect the reward to create missing nested arrays. Do not use legacy `path`
+for custom nested progression lists such as
+`progression.gella_softmaw.absorbed_traits`; define the list in state first and
+target it with `field_path`, or validation may reject the upload even if the
+intended state path appears in prose.
 
 Reward bundle ids must be stable, descriptive slugs. Good examples:
 `reward-pack-rescue-earned-trust`, `reward-pack-failed-city-defense`,
@@ -3144,7 +3154,7 @@ Scene/list updates:
 ```json
 {
   "type": "remove_state_list_item",
-  "path": ["scene", "npcs_present"],
+  "field_path": ["scene", "npcs_present"],
   "value": "Character Name"
 }
 ```
@@ -3152,7 +3162,7 @@ Scene/list updates:
 ```json
 {
   "type": "add_state_list_item",
-  "path": ["scene", "npcs_present"],
+  "field_path": ["scene", "npcs_present"],
   "value": "NPC Name"
 }
 ```
@@ -4223,12 +4233,25 @@ and the story intentionally requires Character Library selection.
   `canonical_order`, `introduce_as`, `can_die`, `location_hint`,
   `scene_presence`, `role`, `relationship`, `note`, `personality_description`,
   `greeting`, `full_character`, `meet_condition`, `join_condition`, `on_unlock`,
-  `unlocked_by`, and `last_triggered_reason`. Shell `profile_images` and `images`
-  are legacy/import-tolerated only and should not be authored.
+  `unlocked_by`, and `last_triggered_reason`, plus the required character
+  definition fields needed by import/upload validation.
 
-- Do not put `gender`, `age`, `adult`, `nsfw`, or `speech_style` on the
-  future-cast shell. Current normalization discards those fields there. Put
-  gender, age, NSFW metadata, and speech style in `full_character`.
+- Future-cast shell validation is strict. `future_cast.items[id]` and
+  `future_cast.items[id].full_character` must both satisfy the normal
+  EmberAdventures character definition requirements. Do not rely on
+  `full_character` alone to repair a thin shell during import. Mirror required
+  identity, gender, appearance, outfit, fallback presentation, profile-image,
+  relationship/default-state, and speech fields onto the shell when validation
+  requires them, and keep those values consistent with `full_character`.
+
+- `future_cast.items[id]` and `full_character` must both include non-empty
+  `outfits`, a valid `starting_outfit_id`, non-empty `fallback_outfits`, and a
+  valid `fallback_starting_outfit_id`. Animal, monster, spirit, slime,
+  natural-form, or otherwise unclothed characters still need at least one
+  outfit entry. A natural body covering outfit is valid, such as an outfit named
+  `"Natural Form"` with concrete clothing-slot values describing fur, scales,
+  shell, feathers, slime membrane, or another body covering, but the outfit's
+  `clothing` object must not be `{}`.
 
 - The story-wide future-cast check must include omissions. If an important
   planned companion, merchant, authority, antagonist, political/family figure,
@@ -4318,6 +4341,10 @@ and the story intentionally requires Character Library selection.
   Do not include `power`, active `known_facts`, active `clothing`, active
   `inventory`, active `image`, populated profile/image history, or other
   live/runtime fields in `full_character`.
+  `full_character` must pass the same final validation as a standalone character
+  definition, including complete gender fallback presentation and non-empty
+  outfit arrays. Do not use `{}` as a placeholder outfit for animal or natural
+  forms.
 
 ## state.objectives
 
@@ -5276,6 +5303,11 @@ asks to populate that exact field or approves exact text for it.
 - `future_cast.items` is an object.
 - Every `future_cast.items` object key matches that entry's own `id`; do not
   use numeric/index keys for future cast.
+- Every `future_cast.items[id]` shell and its `full_character`, when present,
+  satisfies the current character definition contract, including non-empty
+  `outfits`, valid `starting_outfit_id`, non-empty `fallback_outfits`, valid
+  `fallback_starting_outfit_id`, and concrete natural-form outfit entries for
+  animal/natural-body characters instead of `{}`.
 - `world_map.locations` is an object.
 - `scene.speak_targets` exists and the authored starting value is exactly `[]`.
 - Objective references resolve.
