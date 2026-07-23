@@ -4157,19 +4157,20 @@ and the story intentionally requires Character Library selection.
   authored image slot, initialize it from the canonical presentation.
 
 - A profile image is eligible at runtime only when its `male` metadata matches
-  the character's active male/non-male presentation. Never use the opposite
-  presentation as a fallback. Every story-embedded character definition must
-  include import-valid `profile_image_presentations.male` and
-  `profile_image_presentations.non_male` objects, and both objects must include
-  the correct `male` boolean (`true` for male, `false` for non-male). This
-  applies to `state.player`, every `state.players[]` option, `state.characters`,
-  nested NPC `full_character` entries, and every `future_cast.items[id]` shell
-  and `full_character`. If real authored images are not available, use an
-  app-accepted placeholder presentation object or let EmberAdventures provide
-  one during export/import; do not emit blank metadata that lacks the two
-  presentation slots. Real public publishing should still replace placeholders
-  with resolving images when the app requires it. The `male` field belongs only
-  to profile images. Never add it to normal/full-body, group, story, item,
+  the character's active male/female presentation. Never use the opposite
+  presentation as a fallback. Every story-embedded character definition should
+  include `profile_image_presentations.male` and
+  `profile_image_presentations.non_male` keys, but those slots must remain
+  null/blank until they contain real image references. If a real profile image
+  is available, the slot must include the correct `male` boolean (`true` for
+  male, `false` for female/futanari). This applies to `state.player`, every
+  `state.players[]` option, `state.characters`, nested NPC `full_character`
+  entries, and every `future_cast.items[id]` shell and `full_character`. Never
+  use fake image data, transparent data URLs, or placeholder image objects in
+  story or character files. Public publishing requires real resolving images
+  for both presentations; local authoring/import may leave the slots blank until
+  EmberAdventures generates or assigns real images. The `male` field belongs
+  only to profile images. Never add it to normal/full-body, group, story, item,
   outfit, title-card, or other image records.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
@@ -4984,16 +4985,15 @@ Public hosted stories need enough metadata for Supabase/library search before up
 - required default image: a real hosted/default `title_card_image.url`; never
   fabricate a URL when no hosted image exists
 - required character images: every embedded character definition needs
-  import-valid `profile_image_presentations.male` and
-  `profile_image_presentations.non_male` candidates. This includes
+  real resolving `profile_image_presentations.male` and
+  `profile_image_presentations.non_male` candidates before upload. This includes
   `state.player`, every `state.players[]` option, `state.characters`, nested NPC
   `full_character` entries, and every `future_cast.items[id]` shell and
   `full_character`. If real authored images are not available at story authoring
-  time, use an app-accepted placeholder presentation object with the complete
-  profile-image shape and correct `male` boolean, or let EmberAdventures provide
-  one during export/import. Do not leave these slots blank or omit them. The
-  `default_profile_image` slot should match one of those presentation slots once
-  the app has populated it.
+  time, leave those slots null/blank and generate or assign real images in
+  EmberAdventures before publishing. Never use fake image data, transparent data
+  URLs, or placeholder image objects. The `default_profile_image` slot should
+  remain null/blank until it can match one of those real presentation slots.
 - derived library counts: player-select boolean/count, main objective count, side
   objective count, future character count, starting party member count, and
   starting NPC count
