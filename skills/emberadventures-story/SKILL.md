@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.29`.
+Current skill version: `1.0.30`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -4158,13 +4158,19 @@ and the story intentionally requires Character Library selection.
 
 - A profile image is eligible at runtime only when its `male` metadata matches
   the character's active male/non-male presentation. Never use the opposite
-  presentation as a fallback. Authors need one real resolving hosted profile
-  image for the male presentation and one for the non-male presentation before
-  local import or public publishing. Both
-  `profile_image_presentations.male.url` and
-  `profile_image_presentations.non_male.url` must resolve as images. The `male`
-  field belongs only to profile images. Never add it to normal/full-body, group,
-  story, item, outfit, title-card, or other image records.
+  presentation as a fallback. Every story-embedded character definition must
+  include import-valid `profile_image_presentations.male` and
+  `profile_image_presentations.non_male` objects, and both objects must include
+  the correct `male` boolean (`true` for male, `false` for non-male). This
+  applies to `state.player`, every `state.players[]` option, `state.characters`,
+  nested NPC `full_character` entries, and every `future_cast.items[id]` shell
+  and `full_character`. If real authored images are not available, use an
+  app-accepted placeholder presentation object or let EmberAdventures provide
+  one during export/import; do not emit blank metadata that lacks the two
+  presentation slots. Real public publishing should still replace placeholders
+  with resolving images when the app requires it. The `male` field belongs only
+  to profile images. Never add it to normal/full-body, group, story, item,
+  outfit, title-card, or other image records.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
 
@@ -4977,11 +4983,15 @@ Public hosted stories need enough metadata for Supabase/library search before up
 - required base metadata: `source`, `creation_tool`, approved `genres`, `nsfw`, and `loli`
 - required default image: a real hosted/default `title_card_image.url`; never
   fabricate a URL when no hosted image exists
-- required character images: every embedded full character needs one real
-  resolving hosted profile image for the male presentation and one for the
-  non-male presentation before local import or public publishing. Both
-  `profile_image_presentations.male.url` and
-  `profile_image_presentations.non_male.url` must resolve as images. The
+- required character images: every embedded character definition needs
+  import-valid `profile_image_presentations.male` and
+  `profile_image_presentations.non_male` candidates. This includes
+  `state.player`, every `state.players[]` option, `state.characters`, nested NPC
+  `full_character` entries, and every `future_cast.items[id]` shell and
+  `full_character`. If real authored images are not available at story authoring
+  time, use an app-accepted placeholder presentation object with the complete
+  profile-image shape and correct `male` boolean, or let EmberAdventures provide
+  one during export/import. Do not leave these slots blank or omit them. The
   `default_profile_image` slot should match one of those presentation slots once
   the app has populated it.
 - derived library counts: player-select boolean/count, main objective count, side

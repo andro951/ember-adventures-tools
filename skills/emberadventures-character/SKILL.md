@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.16`.
+Current skill version: `1.0.17`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -576,7 +576,7 @@ agency.
 
 - `default_profile_image.male`: Required boolean profile-presentation metadata. Use `true` only for a male or trans-male presentation. Use `false` for female, futanari, non-binary, and every other non-male presentation. Female and futanari profile images intentionally share the non-male bucket. For a blank authored slot, initialize this from the canonical character presentation. For a configured image, describe the presentation actually shown by that image, even when it is the character's fallback rather than canonical presentation. Never infer this value later from the character's current gender.
 
-- `profile_image_presentations`: Application-managed pair of default profile-image slots named `male` and `non_male`. Each slot uses the same shape as `default_profile_image`; `male.male` must be `true` and `non_male.male` must be `false`. Character-creation AIs emit both blank slots exactly as shown and never invent URLs, local ids, prompts, or seeds. EmberAdventures fills them when images are generated or selected.
+- `profile_image_presentations`: Application-managed pair of default profile-image slots named `male` and `non_male`. Each slot uses the same shape as `default_profile_image`; `male.male` must be `true` and `non_male.male` must be `false`. Character-creation AIs emit both slots exactly as shown and never invent real URLs, local ids, prompts, or seeds. For standalone character drafts, leave image values blank for EmberAdventures to fill when images are generated or selected. When a character definition is embedded in a story file, the story skill may require import-valid placeholder presentation objects for both slots if real images are not available yet.
 
 A character needs one real resolving hosted profile image for the male presentation and one for the non-male presentation before local import or public publishing. Both `profile_image_presentations.male.url` and `profile_image_presentations.non_male.url` must resolve as images, and the character must also have the required alternate name/outfit group. Local import and public publishing are hard rejections until every requirement is complete. `default_profile_image` remains the canonical/default presentation slot and should match one of the two presentation slots once the app has populated them. At runtime, a profile image is eligible only when its `male` value matches the character's active male/non-male presentation; never display the opposite bucket as a fallback. This metadata applies only to profile images. Normal/full-body, group, story, item, outfit, title-card, and other images must not receive a `male` field.
 
