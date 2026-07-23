@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.27`.
+Current skill version: `1.0.28`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -2689,11 +2689,23 @@ earlier malformed reward; author every path against the live runtime shape.
 
 For `add_state_list_item` and `remove_state_list_item`, prefer `field_path` for
 ordinary state paths. Use `target` plus `field_path` only when the list belongs
-to a resolved character/NPC rather than directly to story state. The destination
-must already exist as an array in the authored starting state before import; do
-not expect the reward to create missing nested arrays. Do not use legacy `path`
-for custom nested progression lists such as
-`progression.gella_softmaw.absorbed_traits`; define the list in state first and
+to a resolved character/NPC rather than directly to story state. Custom story
+progression lists should normally live under `story_inventory`, not arbitrary
+top-level state objects. The destination must already exist as an array in the
+authored starting state before import; do not expect the reward to create
+missing nested arrays. Good example:
+
+```json
+{
+  "type": "add_state_list_item",
+  "field_path": ["story_inventory", "progression", "gella_softmaw", "absorbed_traits"],
+  "value": "trait name"
+}
+```
+
+Do not use legacy `path` for custom nested progression lists such as
+`progression.gella_softmaw.absorbed_traits`, and do not place those lists at
+top-level `progression`; define the list under `story_inventory` first and
 target it with `field_path`, or validation may reject the upload even if the
 intended state path appears in prose.
 
@@ -4249,9 +4261,12 @@ and the story intentionally requires Character Library selection.
   valid `fallback_starting_outfit_id`. Animal, monster, spirit, slime,
   natural-form, or otherwise unclothed characters still need at least one
   outfit entry. A natural body covering outfit is valid, such as an outfit named
-  `"Natural Form"` with concrete clothing-slot values describing fur, scales,
-  shell, feathers, slime membrane, or another body covering, but the outfit's
-  `clothing` object must not be `{}`.
+  `"Natural Form"`, but it must use supported clothing slots. For example, use
+  `shirt` for natural feathers, fur, scales, shell, slime membrane, or another
+  body covering over the chest/back/arms, and `pants` for the lower body/tail.
+  Do not invent slots such as `full_body`; unsupported slots can normalize away
+  and make the outfit appear empty. The outfit's `clothing` object must not be
+  `{}`.
 
 - The story-wide future-cast check must include omissions. If an important
   planned companion, merchant, authority, antagonist, political/family figure,

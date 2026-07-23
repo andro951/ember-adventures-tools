@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.15`.
+Current skill version: `1.0.16`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -456,7 +456,7 @@ bare-bottom wording only when the corresponding structured covering group is
 empty. Partial removal relies on the remaining structured clothing values and
 must not add invented slot-specific exposure prose.
 
-- `outfits`: Array of outfit objects. Every character must have at least one outfit, even if they only have a single outfit. A one-outfit character still needs `outfits: [{ "id": "default", "name": "Default", "clothing": { ... } }]` and `starting_outfit_id: "default"`. Do not replace `outfits` with a single `clothing` object. Do not leave it empty. Do not store active/current clothing here after play. Animal, monster, spirit, slime, natural-form, or otherwise unclothed characters still need at least one concrete outfit entry. A natural body covering outfit is valid, such as `"Natural Form"`, but its `clothing` object must describe the covering through real slot values such as fur, scales, shell, feathers, slime membrane, or another body covering. Never use `{}` as the clothing object.
+- `outfits`: Array of outfit objects. Every character must have at least one outfit, even if they only have a single outfit. A one-outfit character still needs `outfits: [{ "id": "default", "name": "Default", "clothing": { ... } }]` and `starting_outfit_id: "default"`. Do not replace `outfits` with a single `clothing` object. Do not leave it empty. Do not store active/current clothing here after play. Animal, monster, spirit, slime, natural-form, or otherwise unclothed characters still need at least one concrete outfit entry. A natural body covering outfit is valid, such as `"Natural Form"`, but it must use supported clothing slots. For example, use `shirt` for natural feathers, fur, scales, shell, slime membrane, or another body covering over the chest/back/arms, and `pants` for the lower body/tail. Do not invent slots such as `full_body`; unsupported slots can normalize away and make the outfit appear empty. Never use `{}` as the clothing object.
 
 - `outfits[]`: Each outfit object is a reusable preset. It should describe one coherent outfit the character can wear, such as travel clothes, a guild uniform, armor, sleepwear, formalwear, casual clothes, work clothes, battle gear, a disguise, or a source-canon outfit. Do not create vague outfits like `"whatever fits the scene"` or `"armor or dress depending on mood"`. If a character needs multiple looks, create separate concrete outfit entries.
 
