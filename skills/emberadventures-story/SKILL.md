@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.25`.
+Current skill version: `1.0.26`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -297,13 +297,45 @@ human can read it easily and an AI can convert it reliably:
 - image guidance and important visual moments;
 - notes from the user and unresolved decisions.
 
+Keep the story design document separate from EmberAdventures implementation
+details. The design document is the durable creative source of truth; it should
+remain useful even if the game engine, schema, objective system, reward names,
+or state paths change later. Write it in implementation-agnostic story terms.
+
+The design document should include durable story content such as premise, tone,
+player fantasy, cast, relationships, locations, factions, world rules,
+conflicts, story arcs, major events, choices, consequences, endings, postgame,
+character-specific personal stories, pacing expectations, downtime between
+major events, intended branching, and human-readable outcomes. Include general
+fictional state or presentation changes when they matter to the story, such as
+a character changing into a private outfit when intimacy begins and changing
+back into a public outfit afterward, joining or leaving the player's group,
+traveling with the player, moving into a shared home, becoming romanceable, or
+asking to remain connected.
+
+The design document should generally avoid implementation-specific material:
+objective IDs, exact objective-tree structures, engine field names, reward
+objects, state paths, schema-specific flags, precise unlock mechanics, and
+technical instructions for how outfit changes, recruitment, relationship
+checks, branching, scene lists, or state mutations must be implemented. General
+mechanical language is still appropriate when it describes the intended player
+experience. For example, say that a personal story includes buildup, intimacy,
+aftermath, an outfit change, and a possible invitation to join the player; do
+not dictate the exact objective count, reward type, or state mutation used to
+implement those events.
+
+Only the final story JSON/campaign file should translate the approved design
+into the current EmberAdventures implementation structure.
+
 When reverse-reconciling an existing JSON story into a design document, treat
 the complete JSON as the content authority and modify only the design document.
 Describe the premise, cast, world, relationships, arcs, progression, choices,
 and consequences in human-readable prose. Do not turn the document into schema
-documentation or an objective-by-objective transcription. Include enough
-content to reconstruct a substantially similar story, and report contradictions
-between the JSON and existing document instead of silently choosing one version.
+documentation, implementation notes, exact state mutations, or an
+objective-by-objective transcription. Include enough content to reconstruct a
+substantially similar story in a future implementation, and report
+contradictions between the JSON and existing document instead of silently
+choosing one version.
 
 Before writing objectives for a serious story, produce a compact plot outline
 or story design document with the premise, player fantasy, emotional targets,
@@ -1506,6 +1538,28 @@ player has already visibly earned that knowledge.
   character-image paths or objective image rewards. Only include other names in
   `scene.image_characters` when the story deliberately needs a group opening
   image instead of a solo player opening image.
+- Objective rewards must intentionally maintain scene membership when the story
+  fiction changes who is physically present. Do not rely on the engine to infer
+  every entrance, exit, departure, recruitment, dismissal, travel move, private
+  scene isolation, or aftermath cleanup from prose alone.
+- When a non-party NPC enters the current scene, add their proper name to
+  `scene.npcs_present` with `add_state_list_item`; when they leave, remove them
+  with `remove_state_list_item`. If the NPC should also appear in generated
+  scene images, update `scene.image_characters` intentionally.
+- When a party member becomes physically present with the player, add their
+  proper name to `scene.party_members_present`; when they leave the immediate
+  scene but remain in the party/roster, remove only the scene-list entry. Do
+  not remove them from `state.characters` unless the story is actually removing
+  them from the party.
+- When a character is no longer a valid direct speech target, remove them from
+  `scene.speak_targets`. The authored starting value is always `[]`; runtime or
+  rewards may add targets only when the story wants that focused interaction.
+- Scene-list rewards should match the immediate fiction at the end of the
+  objective or route. For example: after a council meeting ends, remove
+  council-only NPCs from `scene.npcs_present`; after a shopkeeper steps into a
+  private conversation, add that named NPC; after a purchased companion joins
+  the player, promote/add them and then add them to the appropriate present
+  party list unless the story says they will arrive later.
 
 ## Runtime-State Separation
 
