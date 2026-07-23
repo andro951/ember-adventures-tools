@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.24`.
+Current skill version: `1.0.25`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -4080,11 +4080,13 @@ and the story intentionally requires Character Library selection.
 
 - A profile image is eligible at runtime only when its `male` metadata matches
   the character's active male/non-male presentation. Never use the opposite
-  presentation as a fallback. Authors need at least one profile image per
-  character for public publishing, but do not need to pre-generate both; the
-  game can generate and retain a missing active presentation during play. The
-  `male` field belongs only to profile images. Never add it to normal/full-body,
-  group, story, item, outfit, title-card, or other image records.
+  presentation as a fallback. Authors need one real resolving hosted profile
+  image for the male presentation and one for the non-male presentation before
+  local import or public publishing. Both
+  `profile_image_presentations.male.url` and
+  `profile_image_presentations.non_male.url` must resolve as images. The `male`
+  field belongs only to profile images. Never add it to normal/full-body, group,
+  story, item, outfit, title-card, or other image records.
 
 - Do not put opening handlers, registrars, merchants, quest givers, clerks, or future companions here unless they truly start as joined party/current companion characters.
 
@@ -4877,10 +4879,13 @@ Public hosted stories need enough metadata for Supabase/library search before up
 - required base metadata: `source`, `creation_tool`, approved `genres`, `nsfw`, and `loli`
 - required default image: a real hosted/default `title_card_image.url`; never
   fabricate a URL when no hosted image exists
-- required character images: every embedded full character needs at least one
-  resolving hosted `default_profile_image.url` with explicit boolean
-  `default_profile_image.male`. That image may depict either the canonical or
-  fallback presentation; both presentations are not required before publishing.
+- required character images: every embedded full character needs one real
+  resolving hosted profile image for the male presentation and one for the
+  non-male presentation before local import or public publishing. Both
+  `profile_image_presentations.male.url` and
+  `profile_image_presentations.non_male.url` must resolve as images. The
+  `default_profile_image` slot should match one of those presentation slots once
+  the app has populated it.
 - derived library counts: player-select boolean/count, main objective count, side
   objective count, future character count, starting party member count, and
   starting NPC count
