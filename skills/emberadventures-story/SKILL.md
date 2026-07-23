@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.28`.
+Current skill version: `1.0.29`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -2689,25 +2689,27 @@ earlier malformed reward; author every path against the live runtime shape.
 
 For `add_state_list_item` and `remove_state_list_item`, prefer `field_path` for
 ordinary state paths. Use `target` plus `field_path` only when the list belongs
-to a resolved character/NPC rather than directly to story state. Custom story
-progression lists should normally live under `story_inventory`, not arbitrary
-top-level state objects. The destination must already exist as an array in the
-authored starting state before import; do not expect the reward to create
-missing nested arrays. Good example:
+to a resolved character/NPC rather than directly to story state. Story-owned
+custom list reward targets should use flat array fields under
+`story_inventory`, not nested custom object paths, unless the app validator is
+explicitly updated to support nested list paths. The destination must already
+exist as an array in the authored starting state before import; do not expect
+the reward to create missing arrays. Good example:
 
 ```json
 {
   "type": "add_state_list_item",
-  "field_path": ["story_inventory", "progression", "gella_softmaw", "absorbed_traits"],
+  "field_path": ["story_inventory", "gella_traits_absorbed"],
   "value": "trait name"
 }
 ```
 
-Do not use legacy `path` for custom nested progression lists such as
-`progression.gella_softmaw.absorbed_traits`, and do not place those lists at
-top-level `progression`; define the list under `story_inventory` first and
-target it with `field_path`, or validation may reject the upload even if the
-intended state path appears in prose.
+Do not use legacy `path`, top-level custom objects such as
+`["progression", "gella_softmaw", "absorbed_traits"]`, or nested
+`story_inventory` objects such as
+`["story_inventory", "progression", "gella_softmaw", "absorbed_traits"]` for
+story-owned custom list rewards. Upload validation can reject those nested
+paths even when the arrays exist in the story JSON.
 
 Reward bundle ids must be stable, descriptive slugs. Good examples:
 `reward-pack-rescue-earned-trust`, `reward-pack-failed-city-defense`,
