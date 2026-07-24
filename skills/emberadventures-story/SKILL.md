@@ -4062,19 +4062,23 @@ and the story intentionally requires Character Library selection.
   facts, opening narration, objective titles/summaries/criteria, choice text,
   shop/job descriptions, scene summaries, story rules, and memory entries. The
   UI and runtime prompts resolve the token to the active gender presentation
-  name. Example: `"Married to |[character:daniel-mercer]|."`. Do not use tokens
+  name. Use `|[character_first:stable-character-id]|` when the prose needs only
+  the character's first name. Examples:
+  `"Married to |[character:daniel-mercer]|."` and
+  `"Ask |[character_first:daniel-mercer]| what happened."`. Do not use tokens
   in structured state lists that already store entity ids/names, such as
   `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
   `scene.speak_targets`, reward `character_id`, or objective ids.
 
-- For arbitrary-player stories, write opening messages with `|[player_name]|` and
-  avoid assumptions about gender, body, appearance, personality, personal
-  history, or preexisting relationships unless the story supplies the required
-  fact through `any_player_starting_state`. Story objectives, rules, shops,
-  rewards, and dialogue must remain coherent for every compatible library
-  character. Use `"Player"` only in structured runtime target fields that the
-  engine resolves, such as `scene.image_characters`; do not use it as a literal
-  character name.
+- For arbitrary-player stories, write opening messages with `|[player_name]|`
+  when the full selected player name is needed, or `|[player_first_name]|` /
+  `|[player_first]|` when only the first name is needed. Avoid assumptions about
+  gender, body, appearance, personality, personal history, or preexisting
+  relationships unless the story supplies the required fact through
+  `any_player_starting_state`. Story objectives, rules, shops, rewards, and
+  dialogue must remain coherent for every compatible library character. Use
+  `"Player"` only in structured runtime target fields that the engine resolves,
+  such as `scene.image_characters`; do not use it as a literal character name.
 
 - If the premise requires story inventory, stats, held items, condition, pose,
   role, known facts, or genre-appropriate clothing regardless of the selected
