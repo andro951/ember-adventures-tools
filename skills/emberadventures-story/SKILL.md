@@ -4058,16 +4058,16 @@ and the story intentionally requires Character Library selection.
 
 - In authored prose fields that mention another character by name, use explicit
   character reference tokens instead of hardcoding either presentation name:
-  `{character:stable-character-id}`. This includes relationship text, known
+  `|[character:stable-character-id]|`. This includes relationship text, known
   facts, opening narration, objective titles/summaries/criteria, choice text,
   shop/job descriptions, scene summaries, story rules, and memory entries. The
   UI and runtime prompts resolve the token to the active gender presentation
-  name. Example: `"Married to {character:daniel-mercer}."`. Do not use tokens
+  name. Example: `"Married to |[character:daniel-mercer]|."`. Do not use tokens
   in structured state lists that already store entity ids/names, such as
   `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
   `scene.speak_targets`, reward `character_id`, or objective ids.
 
-- For arbitrary-player stories, write opening messages with `{player_name}` and
+- For arbitrary-player stories, write opening messages with `|[player_name]|` and
   avoid assumptions about gender, body, appearance, personality, personal
   history, or preexisting relationships unless the story supplies the required
   fact through `any_player_starting_state`. Story objectives, rules, shops,

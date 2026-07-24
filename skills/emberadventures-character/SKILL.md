@@ -376,10 +376,10 @@ When migrating an existing cast into gender-flexible definitions, preserve ident
 
 - Character references in prose: when relationship text, known facts, or other
   authored prose mentions another EmberAdventures character that may have a
-  gender-adapted name, use `{character:stable-character-id}` instead of
+  gender-adapted name, use `|[character:stable-character-id]|` instead of
   hardcoding either presentation name. The game resolves this to the active
   presentation name in UI and prompts. Example:
-  `"Married to {character:daniel-mercer}."`. Do not use these tokens in
+  `"Married to |[character:daniel-mercer]|."`. Do not use these tokens in
   structured fields that already store entity ids/names.
 
 - `starting_trust`: Starting trust from 0 to 10. Use a number. `0` means no trust or unknown trust; `10` means complete trust at start. Do not use legacy 0-100 values.
