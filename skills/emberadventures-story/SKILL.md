@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.31`.
+Current skill version: `1.0.32`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -511,7 +511,39 @@ with rollback and choice support.
     schema fields are questionable, the premise is underdeveloped, or visible
     text leaks future/private information, fix the JSON before final output
     instead of leaving notes for someone else.
-17. Run the objective-quality pass: every objective must have authored,
+17. Run the hidden-information implementation pass. For every fact, identity,
+    ability, relationship, class, motive, location, faction, villain, twist,
+    or world rule that the player is not supposed to know yet, identify the
+    exact objective or event that reveals it. Keep the information absent from
+    all state and prompt projections that the player or narrator can see until
+    that point. Do not put a future reveal into starting `known_facts`, visible
+    character facts, `scene.summary`, current NPC summaries, active
+    `story_rules`, opening text, visible objective text, public metadata, or
+    any other context sent to the narrator merely because it will eventually
+    become true.
+18. Implement each intentional reveal with an authored deterministic reward
+    on the objective that reveals it. Use the supported reward for the actual
+    destination: `add_state_list_item` for a new player or character known
+    fact, `set_state_field` for a world flag or other scalar state, character
+    field updates for changed character information, `add_story_rule` for a
+    rule that becomes true in the fiction, and the appropriate introduction,
+    scene-list, map, item, or objective reward for newly available entities.
+    The completion instruction should describe the immediate dramatic reveal,
+    but it must not be the only place where the durable truth is recorded.
+    Do not pre-seed a hidden fact and expect the narrator to remember not to
+    mention it; if the narrator receives it, it is not hidden.
+19. At the end of authoring, build a reveal audit table with one row per
+    intentionally hidden fact. Record: the fact, the first point at which the
+    player may know it, where it is absent before that point, the exact reward
+    that adds or changes it, and the player-facing text that introduces it.
+    Inspect every embedded character definition, player option, future-cast
+    shell/full character, NPC directory entry, known-fact list, story rule,
+    objective summary/instruction, opening message, map field, shop/job entry,
+    and generated-message context for leaks. Check names and labels as well as
+    prose: a future class, identity, or reveal must not be smuggled into a
+    starting fact or generic rule. Only after this audit passes should the
+    story be exported.
+20. Run the objective-quality pass: every objective must have authored,
     story-specific completion criteria and completion instructions. Reject and
     rewrite objectives whose criteria or instructions merely repeat the title,
     use boilerplate such as `Return yes only when the player completes: {title}`,
@@ -524,7 +556,7 @@ with rollback and choice support.
     implementation count limit. Preserve the complete authored objective graph.
     If the target application cannot retain the full graph, stop and report the
     incompatibility instead of returning a story whose later content will vanish.
-18. Run the pacing-and-relationship pass: serious stories should not place
+21. Run the pacing-and-relationship pass: serious stories should not place
     chapter-scale beats directly beside each other without bridge objectives.
     Add playable objectives for trust, suspicion, attraction, private
     conversations, world understanding, preparation, and consequences when those
@@ -555,7 +587,7 @@ with rollback and choice support.
     complete opposite male/non-male fallback names and outfits. The runtime
     performs preference adaptation; the authored personality, appearance, role,
     plot function, and relationship arc must remain coherent in every gender.
-19. Run the publish-as-is pass: assume the user will import or publish the
+22. Run the publish-as-is pass: assume the user will import or publish the
     generated file immediately with no manual cherry-picking, no comparison
     against another draft, and no review from another thread/model. If two
     internal options look useful, merge them yourself before final output. Do
