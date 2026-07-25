@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.37`.
+Current skill version: `1.0.38`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -1576,13 +1576,13 @@ player has already visibly earned that knowledge.
   the visible description the player can use. Add a later objective reward that
   sets `player_known_name` to `true` only when the story actually reveals the
   name.
-- The player must never be placed in `scene.party_members_present`,
-  `scene.npcs_present`, or `scene.speak_targets`.
-- `scene.speak_targets` is manual player UI state only. The authored starting
-  value must always be `[]`, even when several characters or NPCs are present.
-  Never change it with an objective reward, reward bundle, reward template,
-  state mutation, or any other story-authored effect. Speaking targets are not
-  required to make present characters interactable.
+- The player must never be placed in `scene.party_members_present` or
+  `scene.npcs_present`.
+- `scene.speak_targets` is manual player UI state only. Do not author it beyond
+  an empty starting array, and never change it with an objective reward, reward
+  bundle, reward template, state mutation, or any other story-authored effect.
+  It is not required to make a named character interactable; story objectives
+  must use physical presence lists instead.
 - `scene.image_characters` should normally be `["Player"]` for the opening
   normal image, even when NPCs or party members are present. Opening NPCs and
   party members can receive their own profile/solo images through the app's
@@ -1936,6 +1936,75 @@ not consume the next objective's playable content. A travel objective normally
 establishes the destination and the next interaction; it does not perform the
 entire conversation, lesson, negotiation, or conflict waiting there.
 
+## Dialogue Objectives
+
+Use `type: "dialogue"` when you want a character to deliver one or more lines
+of dialogue to the player. This is especially useful for explanations,
+tutorials, magic rules, contract terms, warnings, briefings, confessions,
+discoveries, important announcements, or precise dramatic dialogue.
+
+A dialogue objective is still a normal objective. It uses the same
+`completion_control`, `completion_criteria`, `completion_instruction`,
+rewards, routes, and scene-presence rewards as other objectives.
+
+`dialogue_lines` is required for every dialogue objective. It must be a
+non-empty ordered array of complete literal dialogue lines:
+
+```json
+{
+  "type": "dialogue",
+  "title": "Talk to |[character_first:mentor-id]|",
+  "summary": "|[character_first:mentor-id]| has important information to explain.",
+  "completion_control": "player",
+  "completion_criteria": "Return yes when the player speaks to |[character:mentor-id]|.",
+  "completion_instruction": "|[character_first:mentor-id]| speaks with patient precision and watches for the player's reaction.",
+  "dialogue_lines": [
+    "(|[character:mentor-id]|) \"First required line.\"",
+    "(|[character:mentor-id]|) \"Second required line.\""
+  ]
+}
+```
+
+Each `dialogue_lines` entry must contain the intended speaker tag in
+parentheses, quotation marks, and the exact wording that must reach the player.
+Use normal runtime character-reference tokens so the line resolves to the
+character's actual presentation/name in the playthrough.
+
+When the objective completes, EmberAdventures uses the normal shared
+`completion_instruction` path, then requires the narrator to deliver every
+`dialogue_lines` entry exactly once in the authored order. The narrator may add
+narration, reactions, demonstrations, or other dialogue between those lines,
+but must not paraphrase, merge, omit, reorder, or alter a required line.
+
+`completion_instruction` remains general guidance for the entire completion
+response. It can direct tone, character behavior, narration, a demonstration,
+an emotional reaction, scene movement, or another appropriate beat. Do not add
+a second dialogue-specific instruction field.
+
+For a character-led explanation, use a short dialogue-objective chain when the
+player should have a chance to react between groups of information. The first
+objective can complete when the player directly speaks to the explaining
+character:
+
+```text
+Return yes when the player speaks to |[character:mentor-id]|.
+```
+
+Later dialogue objectives can complete when the player responds, shows signs
+of listening, asks a relevant follow-up, asks the character to continue, or
+observes a demonstration:
+
+```text
+Return yes when the player responds to |[character:mentor-id]|, shows signs of
+listening to the explanation, asks a relevant follow-up question, asks the
+character to continue, or observes the demonstration. Do not complete when the
+player changes the subject, leaves, or merely remains nearby without engaging.
+```
+
+The explaining character should move the dialogue forward. Do not require the
+player to guess which question unlocks the next fact or to ask for information
+the character has already been directed to deliver.
+
 ## Objective Summaries Describe The Live Situation
 
 An objective summary is player-facing. It describes the immediate situation and
@@ -1952,16 +2021,18 @@ route labels, endings, betrayals, or unearned consequences.
 
 ### Multi-Topic Conversation Or Teaching
 
-Use one objective for a coherent lesson, interview, debrief, negotiation, or
-conversation even when it has several related concepts. Do not split one
-natural exchange into trivial "ask one question" objectives.
+Use a normal objective for a flexible lesson, interview, debrief, negotiation,
+or conversation when exact lines are not needed. Use `type: "dialogue"` when
+the story needs a character to deliver authored exact lines. A dialogue chain
+may split a longer teaching exchange into natural groups so the player can
+respond between them.
 
 - Give the objective a title that identifies the person or subject.
 - Use the summary to name the broad topics.
-- List each required fact or concept in `completion_criteria`.
-- Require that the NPC actually explain every required topic; do not require
-  exact player wording.
-- Use the completion instruction only for the practical next step.
+- For a normal objective, list each required fact or concept in
+  `completion_criteria` and use the completion instruction for the practical
+  next step.
+- For a dialogue objective, put exact required dialogue in `dialogue_lines`.
 
 Use separate objectives only when a topic naturally becomes its own scene,
 choice, conflict, travel action, or relationship beat.
@@ -4071,11 +4142,12 @@ verbatim copy of Codex process instructions.
 
 - `scene.npcs_present`: Array of nearby known non-party NPC names close enough to interact. Do not use as long-term memory. Do not put generic labels such as `"guards"`, `"travelers"`, `"Guild Clerk"`, or `"cart drivers"` here; use proper named NPCs or leave it empty.
 
-- `scene.speak_targets`: Manual player UI state, not story state. In authored
-  story JSON, omit it or set the starting value to `[]`. Never target it with
-  objective rewards, reward bundles, reward templates, or any other authored
-  state mutation. Use `scene.party_members_present` and `scene.npcs_present`
-  to describe who is physically available for conversation.
+- `scene.speak_targets` is manual player UI state only. In authored story JSON,
+  omit it or set the starting value to `[]`; never target it with objective
+  rewards, reward bundles, reward templates, or any other authored state
+  mutation. Do not rely on it to make characters available for conversation;
+  use `scene.party_members_present` and `scene.npcs_present` to describe who is
+  physically available.
 
 - `scene.image_action`: Short visual phrase, usually 2-8 words, no comma and no full sentence.
 
@@ -4537,7 +4609,9 @@ and the story intentionally requires Character Library selection.
 
 - Objective `title`: Player-facing objective title. Do not name locked future characters or role spoilers before they are introduced.
 
-- Objective `type`: `"story"` or `"side"`.
+- Objective `type`: `"story"`, `"side"`, or `"dialogue"`. `"dialogue"`
+  is a main/story objective that requires non-empty `dialogue_lines`; it is not
+  a `completion_control` value.
 
 - Objective `kind`: Do not author this redundant editor field in clean normal
   story JSON. Use `type: "story"` or `type: "side"`; the visual editor may derive
@@ -4628,6 +4702,14 @@ Supported deterministic objective rewards include: `introduce_future_character`,
   keeps the story moving.
 
 - Objective `completion_message`: Optional completion message string. Use `""` if not needed.
+
+- Objective `dialogue_lines`: Required only when `type` is `"dialogue"`.
+  Non-empty ordered array of exact character dialogue lines. Each line uses a
+  parenthesized speaker tag and quoted dialogue, for example
+  `(|[character:mentor-id]|) "Exact line."`. The narrator must include every
+  line exactly once in that order after the objective completes. The normal
+  `completion_instruction` remains the only completion-instruction field and
+  directs the whole response, not only text after the dialogue lines.
 
 - Objective `completion_control`: `"player"`, `"ai"`, `"choice"`, or `"reward_only"`. `"player"` means the verifier checks one selected player-action objective after a player-authored turn and can record progress without completing. Standard `"ai"` objectives are checked before the normal narrator reply and then receive post-reply progress checks; use them for visible outcomes that still need play to establish. `"choice"` means EmberAdventures presents this objective as a forced choice menu, completes the owner objective immediately when the player selects one option from `choices[]`, and applies that option's rewards without AI verification. `"reward_only"` means the objective is hidden infrastructure: when it becomes available, EmberAdventures immediately completes it, applies its rewards, and advances to `next_objectives` or dependent objectives without asking the player or AI.
 
