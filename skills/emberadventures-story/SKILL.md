@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.33`.
+Current skill version: `1.0.34`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -1345,9 +1345,10 @@ player has already visibly earned that knowledge.
   expect one player message to complete multiple consecutive objectives. Use
   larger scene-scale objectives or bridge objectives instead.
 - Player-controlled objectives are checked after player-authored turns.
-  AI-controlled objectives are checked after the narrator reply has actually
-  shown the outcome. Do not write AI-controlled criteria as if the verifier is
-  deciding whether the next reply should do the event.
+  Standard AI-controlled objectives are checked before the narrator reply on a
+  normal player turn, then receive a post-reply progress-only check. Do not use
+  them for a private result that must be decided immediately on activation; use
+  `evaluate_ai_on_activation: true` only for that narrow background case.
 - Do not use generic completion text. Never write criteria like
   `Return yes only when the player completes: {title}` or instructions like
   `Resolve the immediate outcome of {title} and move to the next objective`.
@@ -2475,6 +2476,7 @@ Convert that intent into the current flat fields instead:
 Every objective needs:
 
 - `completion_control`: `"player"` when the player must initiate/ask/travel/buy/inspect; `"ai"` when the narrator resolves a plot beat such as combat, aftermath, or a reveal; `"choice"` when EmberAdventures should show a forced player choice menu, complete the owner objective immediately, and apply the selected option's rewards without AI verification; `"reward_only"` only for a hidden deterministic transition node that immediately applies rewards and moves to its next objective when reached.
+- `evaluate_ai_on_activation`: Optional boolean, default `false`. Valid only with `completion_control: "ai"`. Set it to `true` only for a hidden/private adjudication objective that must evaluate immediately when it becomes active using an already-finished scene and current state. It resolves silently: do not rely on it to narrate, reveal, introduce, or extend anything.
 - `completion_criteria`: private verifier criteria for when the objective is complete and, where useful, what counts only as progress.
 - `completion_instruction`: narrator instruction after completion, especially for introducing unlocked predefined future-cast characters.
 
@@ -2490,9 +2492,12 @@ not generated boilerplate. Never write:
 
 For player-controlled objectives, criteria must name the exact player action,
 commitment, question, purchase, travel, inspection, choice, or conversation that
-finishes the objective. For AI-controlled objectives, criteria must name the
-resolved narrator/world state that must be shown in the narrator reply and must
-not say `player completes`.
+finishes the objective. For standard AI-controlled objectives, criteria must name
+the resolved narrator/world state that the next normal reply can establish and
+must not say `player completes`. For an activation-evaluated AI objective,
+criteria must instead be decidable immediately from an already-finished scene,
+recent messages, and current state; it must not require another player action or
+narrator reply.
 
 Every non-terminal main objective must route intentionally. Use a dependent
 objective with `requires`, use `next_objectives` when the next route depends
@@ -3440,11 +3445,12 @@ AI-controlled objective to decide both when the scene ends and what it means:
    the interaction. Never complete it merely because enough subjects were
    discussed, enough evidence exists to classify the player, or the player is
    still participating normally within the scene.
-3. Follow it with a non-selectable hidden AI-adjudicated objective. Because the
-   conversation has already ended, this second objective completes immediately,
-   evaluates the completed interaction and relevant durable state, selects one
-   hidden route, applies its consequences, and advances. It must not replay,
-   extend, or prematurely terminate the preceding conversation.
+3. Follow it with a non-selectable hidden AI-adjudicated objective with
+   `completion_control: "ai"` and `evaluate_ai_on_activation: true`. Because the
+   conversation has already ended, this second objective is evaluated immediately,
+   selects one hidden route from the completed interaction and relevant durable
+   state, applies its consequences, and advances. It must not replay, extend,
+   narrate, or prematurely terminate the preceding conversation.
 
 This separation is the default for meetings, negotiations, interviews,
 interrogations, dates, trials, recruitment talks, political discussions,
@@ -3478,6 +3484,7 @@ Example pair:
     "selectable": false,
     "requires": ["attend-war-council"],
     "completion_control": "ai",
+    "evaluate_ai_on_activation": true,
     "completion_criteria": "The preceding war council has already ended. Complete immediately and judge the player's conduct, opinions, known facts, and current relationships from that completed interaction.",
     "completion_instruction": "Apply the selected private result without replaying or extending the council.",
     "route_control": "ai",
@@ -4564,7 +4571,9 @@ Supported deterministic objective rewards include: `introduce_future_character`,
 
 - Objective `completion_message`: Optional completion message string. Use `""` if not needed.
 
-- Objective `completion_control`: `"player"`, `"ai"`, `"choice"`, or `"reward_only"`. `"player"` means the verifier checks one selected player-action objective after a player-authored turn and can record progress without completing. `"ai"` means EmberAdventures checks after the narrator reply and completes only if the reply actually showed the required outcome. `"choice"` means EmberAdventures presents this objective as a forced choice menu, completes the owner objective immediately when the player selects one option from `choices[]`, and applies that option's rewards without AI verification. `"reward_only"` means the objective is hidden infrastructure: when it becomes available, EmberAdventures immediately completes it, applies its rewards, and advances to `next_objectives` or dependent objectives without asking the player or AI.
+- Objective `completion_control`: `"player"`, `"ai"`, `"choice"`, or `"reward_only"`. `"player"` means the verifier checks one selected player-action objective after a player-authored turn and can record progress without completing. Standard `"ai"` objectives are checked before the normal narrator reply and then receive post-reply progress checks; use them for visible outcomes that still need play to establish. `"choice"` means EmberAdventures presents this objective as a forced choice menu, completes the owner objective immediately when the player selects one option from `choices[]`, and applies that option's rewards without AI verification. `"reward_only"` means the objective is hidden infrastructure: when it becomes available, EmberAdventures immediately completes it, applies its rewards, and advances to `next_objectives` or dependent objectives without asking the player or AI.
+
+- Objective `evaluate_ai_on_activation`: Optional boolean, default `false`, valid only with `completion_control: "ai"`. When `true`, EmberAdventures evaluates the hidden objective once as soon as it becomes active, using only established state and recent messages. Use it for a private post-scene assessment or hidden route that has no visible narration of its own. Do not use it for combat, travel, a reveal, a scene that needs another reply, or any objective whose outcome must be shown to the player.
 
 Reward-only objective rules:
 
