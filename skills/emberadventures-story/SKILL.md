@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.35`.
+Current skill version: `1.0.36`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -1329,11 +1329,24 @@ player has already visibly earned that knowledge.
 - Objectives need verifier criteria and safe completion instructions.
 - Objective titles are the primary player-facing instruction. Read each title
   alone and make sure the player knows the intended direction.
-- Use `completion_control: "player"` when the player's action completes the
-  objective. Use `"ai"` when the title gives the player a goal but the
-  narrator/world must decide success or outcome, such as `Defeat the Bandits`.
-  Use `"choice"` for direct forced player choices that EmberAdventures should present
-  in a choice menu and complete immediately without AI verification.
+- Choose `completion_control` based on who must provide the objective's actual
+  result, not merely on whether the player acts first. Use `"player"` when a
+  deliberate player action, attempt, commitment, or self-directed activity is
+  itself the result, or when the player must retain control over when the scene
+  advances. Common suggestions include using an object, attempting an action,
+  choosing or refusing a commitment, travelling under the player's own
+  direction, going to sleep, ending free time, or asking a question when asking
+  it itself is the goal. Use `"ai"` when the player only needs to engage or
+  cooperate and another character or the active scene must provide the actual
+  result. Common suggestions include receiving an explanation or lesson,
+  learning information from someone, following an established guide to a
+  destination, being introduced to a group, attending a meeting that reaches a
+  result, or waiting for a character/world response. A character merely being
+  present does not make an objective AI-controlled; use AI control when that
+  character's explanation, agreement, response, escort, teaching, or decision
+  is required for completion. Use `"choice"` for direct forced player choices
+  that EmberAdventures should present in a choice menu and complete immediately
+  without AI verification.
 - Completion and hidden routing are separate. An objective may use player or AI
   completion plus `route_control: "ai"`; once completion is proven, the same
   verifier classifies the full scene into exactly one private authored outcome.
@@ -1359,12 +1372,17 @@ player has already visibly earned that knowledge.
   purchase, reveal, survival outcome, conversation result, or decision that
   completes the objective.
 - Player-controlled objective criteria must name the specific player action,
-  commitment, question, purchase, travel, inspection, choice, or conversation
-  that completes the objective.
+  attempt, commitment, self-directed travel, inspection, purchase, choice, or
+  player-timed advancement that completes the objective. Do not use player
+  control merely because the player starts a conversation: if an NPC must give
+  the answer, lesson, acceptance, escort arrival, or other required result, use
+  AI control instead.
 - AI-controlled objective criteria must name the specific narrator/world state
-  that counts as resolved, such as enemies defeated/routed/captured, a duel
-  decided, a trial concluded, a reveal delivered, or a danger ended. AI
-  objective criteria must not say `player completes`.
+  that counts as resolved, such as an NPC delivering the needed explanation, an
+  escorted arrival occurring, a meeting reaching its result, enemies being
+  defeated/routed/captured, a duel decided, a trial concluded, a reveal
+  delivered, or a danger ended. AI objective criteria must not say `player
+  completes`.
 - Completion instructions must describe the concrete immediate outcome,
   consequence, reveal, transition, or future-cast introduction for that exact
   story beat. They are hidden narrator guidance, not a duplicate of the title.
@@ -2476,7 +2494,15 @@ Convert that intent into the current flat fields instead:
 
 Every objective needs:
 
-- `completion_control`: `"player"` when the player must initiate/ask/travel/buy/inspect; `"ai"` when the narrator resolves a plot beat such as combat, aftermath, or a reveal; `"choice"` when EmberAdventures should show a forced player choice menu, complete the owner objective immediately, and apply the selected option's rewards without AI verification; `"reward_only"` only for a hidden deterministic transition node that immediately applies rewards and moves to its next objective when reached.
+- `completion_control`: `"player"` when the player's deliberate action itself
+  completes the goal or the player must control when the scene advances; `"ai"`
+  when an NPC or the active scene must provide the result after the player
+  engages or cooperates; `"choice"` when EmberAdventures should show a forced
+  player choice menu, complete the owner objective immediately, and apply the
+  selected option's rewards without AI verification; `"reward_only"` only for a
+  hidden deterministic transition node that immediately applies rewards and
+  moves to its next objective when reached. Follow the detailed control-choice
+  guidance in the Objective Authoring section.
 - `evaluate_ai_on_activation`: Optional boolean, default `false`. Valid only with `completion_control: "ai"`. Set it to `true` only for a hidden/private adjudication objective that must evaluate immediately when it becomes active using an already-finished scene and current state. It resolves silently: do not rely on it to narrate, reveal, introduce, or extend anything.
 - `completion_criteria`: private verifier criteria for when the objective is complete and, where useful, what counts only as progress.
 - `completion_instruction`: narrator instruction after completion, especially for introducing unlocked predefined future-cast characters.
@@ -2492,10 +2518,11 @@ not generated boilerplate. Never write:
 - `Continue naturally from completing this objective.`
 
 For player-controlled objectives, criteria must name the exact player action,
-commitment, question, purchase, travel, inspection, choice, or conversation that
-finishes the objective. For standard AI-controlled objectives, criteria must name
-the resolved narrator/world state that the next normal reply can establish and
-must not say `player completes`. For an activation-evaluated AI objective,
+attempt, commitment, self-directed travel, inspection, purchase, choice, or
+player-timed advancement that finishes the objective. For standard AI-controlled
+objectives, criteria must name the resolved narrator/world state that an NPC or
+the active scene provides after the player engages, and must not say `player
+completes`. For an activation-evaluated AI objective,
 criteria must instead be decidable immediately from an already-finished scene,
 recent messages, and current state; it must not require another player action or
 narrator reply.
@@ -2588,14 +2615,27 @@ Bad title shapes:
   playable in-world objectives.
 - `Survive the Companion's Duel Thread` because `thread` is planning language.
 
-Choose `completion_control` by asking what completes the objective:
+Choose `completion_control` by asking who must provide the objective's actual
+result, not merely who acts first:
 
-- Use `"player"` when the player action itself completes the objective:
-  leaving, asking, inspecting, buying, travelling, accepting,
-  refusing, preparing, training, talking, or starting an attempt.
-- Use `"ai"` when the title gives the player a goal but the narrator/world must
-  decide the outcome: defeating enemies, surviving a duel, winning an auction,
-  resolving a trial, escaping a disaster, or seeing an external event finish.
+- Use `"player"` when the player action or attempt itself completes the
+  objective, or when the player must control when the scene advances. Common
+  suggestions include using an object, attempting an action, deciding whether
+  to accept or refuse a commitment, travelling under the player's own direction,
+  buying or inspecting something, going to sleep, ending free time, or asking a
+  question when asking it is the actual goal.
+- Use `"ai"` when the player only needs to engage or cooperate and another
+  character or the active scene must provide the required result. Common
+  suggestions include receiving an explanation or lesson, learning information
+  from someone, following an established guide to another room or place, being
+  introduced to a group, attending a meeting that reaches a result, or waiting
+  for a character/world response. An NPC merely being present is not enough:
+  their explanation, agreement, response, escort, teaching, or decision must be
+  necessary for completion.
+- If the player says they will try, ask, follow, or cooperate but the objective
+  still depends on another character's substantive response, normally use
+  `"ai"`. If the objective intentionally ends at the player's attempt itself,
+  normally use `"player"`.
 - Use `"choice"` when the story must force one mutually exclusive player
   decision from a list: choosing a law, ally, route, bargain, faction, romantic
   commitment, moral stance, or ending. Each option belongs in the owner
