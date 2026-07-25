@@ -4428,6 +4428,19 @@ and the story intentionally requires Character Library selection.
 
 - Stored/exported JSON keeps the `objectives` object, but normal narrator prompts should not include an `objectives` object inside the `STATE` JSON. If there is an active objective, show it as a plain text prompt section outside `STATE`. Completed-objective handling should use the dedicated completion/turn directive text, not hidden story-source policy metadata.
 
+- Objective prompt visibility is deliberately narrow. Before the active objective
+  completes, the narrator and other ordinary turn/verification prompts may receive
+  only that objective's player-facing `title`, `summary`/`description`, and
+  `completion_criteria`. Do not expose `completion_instruction`, `rewards`,
+  `next_objectives`, route ids, route criteria, future objective details, or other
+  private implementation data before completion. Put information that must be
+  unlocked at a specific moment in the completing objective's deterministic
+  rewards and/or its completion instruction. Only after the engine has confirmed
+  completion should the dedicated follow-up prompt provide the completion
+  instruction and let the narrator present the newly unlocked information. The
+  completion instruction must not be used as a substitute for durable state
+  rewards when the revealed fact needs to persist.
+
 - `objectives.active_id`: Id of the active objective at game start, or `""` if no objective starts selected.
 
 - `objectives.no_current`: Boolean indicating no selected/current objective. Usually false when `active_id` is set.
