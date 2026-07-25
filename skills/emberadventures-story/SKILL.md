@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.38`.
+Current skill version: `1.0.39`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -1939,13 +1939,23 @@ entire conversation, lesson, negotiation, or conflict waiting there.
 ## Dialogue Objectives
 
 Use `type: "dialogue"` when you want a character to deliver one or more lines
-of dialogue to the player. This is especially useful for explanations,
-tutorials, magic rules, contract terms, warnings, briefings, confessions,
-discoveries, important announcements, or precise dramatic dialogue.
+of dialogue to the player. A dialogue objective is just like a normal
+player-controlled or AI-controlled objective, except it can require characters
+to say specific authored lines in the completion response.
 
-A dialogue objective is still a normal objective. It uses the same
-`completion_control`, `completion_criteria`, `completion_instruction`,
-rewards, routes, and scene-presence rewards as other objectives.
+It uses the same `completion_control`, `completion_criteria`,
+`completion_instruction`, rewards, routes, and scene-presence rewards as other
+objectives. Use `completion_control: "player"` when the player's deliberate
+action controls completion, or `completion_control: "ai"` when the scene/NPC
+controls whether the objective resolves. `type: "dialogue"` adds exact dialogue
+delivery; it does not replace or create another completion-control system.
+
+Use dialogue objectives for explanations, tutorials, magic rules, contract
+terms, warnings, briefings, confessions, discoveries, important announcements,
+twists, personal reveals, memorable character moments, or any other situation
+where exact wording matters. For example, an authored line such as
+`"Why didn't you sell me?"` can be guaranteed to reach the player while the
+narrator still writes the surrounding scene naturally.
 
 `dialogue_lines` is required for every dialogue objective. It must be a
 non-empty ordered array of complete literal dialogue lines:
@@ -1980,6 +1990,13 @@ but must not paraphrase, merge, omit, reorder, or alter a required line.
 response. It can direct tone, character behavior, narration, a demonstration,
 an emotional reaction, scene movement, or another appropriate beat. Do not add
 a second dialogue-specific instruction field.
+
+### Exposition Pattern
+
+Dialogue objectives are the required tool when a story needs to deliver
+authored exposition reliably. Do not list a large set of facts in
+`completion_criteria` or `completion_instruction` and hope the narrator covers
+them. Put the exact information in `dialogue_lines`.
 
 For a character-led explanation, use a short dialogue-objective chain when the
 player should have a chance to react between groups of information. The first
@@ -2022,7 +2039,7 @@ route labels, endings, betrayals, or unearned consequences.
 ### Multi-Topic Conversation Or Teaching
 
 Use a normal objective for a flexible lesson, interview, debrief, negotiation,
-or conversation when exact lines are not needed. Use `type: "dialogue"` when
+or conversation when exact dialogue is not needed. Use `type: "dialogue"` when
 the story needs a character to deliver authored exact lines. A dialogue chain
 may split a longer teaching exchange into natural groups so the player can
 respond between them.
