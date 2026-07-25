@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.34`.
+Current skill version: `1.0.35`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -1558,12 +1558,13 @@ player has already visibly earned that knowledge.
   the visible description the player can use. Add a later objective reward that
   sets `player_known_name` to `true` only when the story actually reveals the
   name.
-- The player must never be placed in `scene.party_members_present` or
-  `scene.npcs_present`.
-- Prefer not to author or maintain `scene.speak_targets`. It is not required to
-  make a named character interactable. If a baseline state shape includes it,
-  leaving it empty is sufficient; story objectives should rely on physical
-  presence lists instead.
+- The player must never be placed in `scene.party_members_present`,
+  `scene.npcs_present`, or `scene.speak_targets`.
+- `scene.speak_targets` is manual player UI state only. The authored starting
+  value must always be `[]`, even when several characters or NPCs are present.
+  Never change it with an objective reward, reward bundle, reward template,
+  state mutation, or any other story-authored effect. Speaking targets are not
+  required to make present characters interactable.
 - `scene.image_characters` should normally be `["Player"]` for the opening
   normal image, even when NPCs or party members are present. Opening NPCs and
   party members can receive their own profile/solo images through the app's
@@ -4030,10 +4031,11 @@ verbatim copy of Codex process instructions.
 
 - `scene.npcs_present`: Array of nearby known non-party NPC names close enough to interact. Do not use as long-term memory. Do not put generic labels such as `"guards"`, `"travelers"`, `"Guild Clerk"`, or `"cart drivers"` here; use proper named NPCs or leave it empty.
 
-- `scene.speak_targets` is not required for authored stories and should generally
-  be omitted or left empty. Do not rely on it to make characters available for
-  conversation; use `scene.party_members_present` and `scene.npcs_present` to
-  describe who is physically available.
+- `scene.speak_targets`: Manual player UI state, not story state. In authored
+  story JSON, omit it or set the starting value to `[]`. Never target it with
+  objective rewards, reward bundles, reward templates, or any other authored
+  state mutation. Use `scene.party_members_present` and `scene.npcs_present`
+  to describe who is physically available for conversation.
 
 - `scene.image_action`: Short visual phrase, usually 2-8 words, no comma and no full sentence.
 
