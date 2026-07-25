@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.32`.
+Current skill version: `1.0.33`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -666,7 +666,6 @@ Story exports use this wrapper:
         "party_members_present": [],
         "image_characters": ["Player"],
         "npcs_present": [],
-        "speak_targets": [],
         "image_action": "standing at the starting place",
         "sex_position": "",
         "ai_sex_position": "",
@@ -1558,12 +1557,12 @@ player has already visibly earned that knowledge.
   the visible description the player can use. Add a later objective reward that
   sets `player_known_name` to `true` only when the story actually reveals the
   name.
-- The player must never be placed in `scene.party_members_present`,
-  `scene.npcs_present`, or `scene.speak_targets`.
-- The authored starting `scene.speak_targets` must always be `[]`, even when
-  several characters or NPCs are present in the opening scene. Speaking targets
-  are runtime interaction state, not a declaration that every present character
-  should be targeted when play begins.
+- The player must never be placed in `scene.party_members_present` or
+  `scene.npcs_present`.
+- Prefer not to author or maintain `scene.speak_targets`. It is not required to
+  make a named character interactable. If a baseline state shape includes it,
+  leaving it empty is sufficient; story objectives should rely on physical
+  presence lists instead.
 - `scene.image_characters` should normally be `["Player"]` for the opening
   normal image, even when NPCs or party members are present. Opening NPCs and
   party members can receive their own profile/solo images through the app's
@@ -1574,6 +1573,18 @@ player has already visibly earned that knowledge.
   fiction changes who is physically present. Do not rely on the engine to infer
   every entrance, exit, departure, recruitment, dismissal, travel move, private
   scene isolation, or aftermath cleanup from prose alone.
+- As a recommended reliability pattern, every player, AI, or choice objective
+  that expects specific named people in the scene should include idempotent
+  `add_state_list_item` rewards for those people. Use
+  `scene.party_members_present` for recruited party members and
+  `scene.npcs_present` for non-party NPCs.
+- Consider repeating the same presence rewards on consecutive objectives that
+  continue in one scene. Repeating an idempotent add is harmless and helps
+  prevent a required participant from disappearing between objectives.
+- Prefer explicit `remove_state_list_item` rewards only when the fiction moves
+  to another scene or a person leaves, is released, sold, killed, or otherwise
+  stops being physically present. This is recommended authoring guidance, not a
+  validation requirement; a story may use another coherent presence pattern.
 - When a non-party NPC enters the current scene, add their proper name to
   `scene.npcs_present` with `add_state_list_item`; when they leave, remove them
   with `remove_state_list_item`. If the NPC should also appear in generated
@@ -1583,9 +1594,10 @@ player has already visibly earned that knowledge.
   scene but remain in the party/roster, remove only the scene-list entry. Do
   not remove them from `state.characters` unless the story is actually removing
   them from the party.
-- When a character is no longer a valid direct speech target, remove them from
-  `scene.speak_targets`. The authored starting value is always `[]`; runtime or
-  rewards may add targets only when the story wants that focused interaction.
+- `promote_future_character_to_party` changes roster membership; it is not a
+  substitute for explicitly adding the promoted character to
+  `scene.party_members_present` when the character should also be in the current
+  scene.
 - Scene-list rewards should match the immediate fiction at the end of the
   objective or route. For example: after a council meeting ends, remove
   council-only NPCs from `scene.npcs_present`; after a shopkeeper steps into a
@@ -1757,9 +1769,9 @@ Before finishing:
   it correctly. Do not infer a voice, use a character or actor name, or ask for
   voice metadata during normal story creation.
 - Current scene fields exist: `intimacy_level`, `spicy_mode`,
-  `party_members_present`, `image_characters`, `npcs_present`, `speak_targets`,
-  `image_action`, `sex_position`, and `ai_sex_position`.
-- The player is not in scene presence/speaker lists.
+  `party_members_present`, `image_characters`, `npcs_present`, `image_action`,
+  `sex_position`, and `ai_sex_position`.
+- The player is not in scene presence lists.
 - Every starting `scene.npcs_present` entry resolves to an NPC under
   `npc_directory.locations.*.characters`, and every inline opening speaker tag
   resolves to a present NPC or party member. There are no flat
@@ -3197,6 +3209,10 @@ Story-rule gates and current constraints:
 
 Scene/list updates:
 
+For objectives that expect named characters to remain physically present, a
+recommended pattern is to repeat the applicable idempotent add rewards on each
+consecutive objective. Keep party members and NPCs in their respective lists.
+
 ```json
 {
   "type": "remove_state_list_item",
@@ -4007,7 +4023,10 @@ verbatim copy of Codex process instructions.
 
 - `scene.npcs_present`: Array of nearby known non-party NPC names close enough to interact. Do not use as long-term memory. Do not put generic labels such as `"guards"`, `"travelers"`, `"Guild Clerk"`, or `"cart drivers"` here; use proper named NPCs or leave it empty.
 
-- `scene.speak_targets`: Runtime array of names allowed/expected for speech targeting. In every authored reusable story definition, the starting value must be `[]`, regardless of who is present in the opening scene. Runtime play may populate it later. Any runtime entry must be a proper character name, not a title, job, group, or generic description, and must also be physically present in the matching scene list: party members in `scene.party_members_present`, non-party NPCs in `scene.npcs_present`.
+- `scene.speak_targets` is not required for authored stories and should generally
+  be omitted or left empty. Do not rely on it to make characters available for
+  conversation; use `scene.party_members_present` and `scene.npcs_present` to
+  describe who is physically available.
 
 - `scene.image_action`: Short visual phrase, usually 2-8 words, no comma and no full sentence.
 
@@ -4100,7 +4119,7 @@ and the story intentionally requires Character Library selection.
   `"Ask |[character_first:daniel-mercer]| what happened."`. Do not use tokens
   in structured state lists that already store entity ids/names, such as
   `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
-  `scene.speak_targets`, reward `character_id`, or objective ids.
+  reward `character_id`, or objective ids.
 
 - For arbitrary-player stories, write opening messages with `|[player_name]|`
   when the full selected player name is needed, or `|[player_first_name]|` /
@@ -4340,7 +4359,9 @@ and the story intentionally requires Character Library selection.
 
 - `future_cast.items[id].introduce_as`: Use `"npc"`. Current runtime preserves
   this metadata but does not use `"party_character"` to join the party. Joining
-  must happen through `promote_future_character_to_party`.
+  must happen through `promote_future_character_to_party`. Promotion does not
+  replace a separate scene-presence reward when the new party member should be
+  physically present immediately.
 
 - `future_cast.items[id].can_die`: Optional boolean mirrored into the introduced
   NPC/full character when the story intentionally controls plot armor.
@@ -5396,7 +5417,6 @@ asks to populate that exact field or approves exact text for it.
   `fallback_starting_outfit_id`, and concrete natural-form outfit entries for
   animal/natural-body characters instead of `{}`.
 - `world_map.locations` is an object.
-- `scene.speak_targets` exists and the authored starting value is exactly `[]`.
 - Objective references resolve.
 - No authored objectives, story rules, memory entries, scene participants,
   choices, rewards, map references, or other story content were silently
