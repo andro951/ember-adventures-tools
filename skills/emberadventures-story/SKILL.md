@@ -4170,6 +4170,22 @@ and the story intentionally requires Character Library selection.
   `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
   reward `character_id`, or objective ids.
 
+- Use explicit pronoun tokens whenever a gender-flexible character or the player
+  would otherwise be referred to as he, she, him, her, his, or herself. The
+  subject forms are `|[character_pronoun:stable-character-id]|` and
+  `|[player_pronoun]|`; use `_cap` for a sentence start, such as
+  `|[character_pronoun_cap:stable-character-id]|` or
+  `|[player_pronoun_cap]|`. Object, possessive, and reflexive forms use
+  `character_object_pronoun`, `character_possessive_pronoun`, and
+  `character_reflexive_pronoun` with the same `:stable-character-id` suffix,
+  or `player_object_pronoun`, `player_possessive_pronoun`, and
+  `player_reflexive_pronoun`; each also supports `_cap`. For example:
+  `"|[character_pronoun_cap:danielle-mercer]| places her hand on the stone."`
+  and `"The guard follows |[player_object_pronoun]|."` The app resolves these
+  once when a new save finalizes gender presentation, so the AI receives only
+  ordinary finished prose. Do not hardcode gendered pronouns for adaptable
+  characters or arbitrary-player stories.
+
 - For arbitrary-player stories, write opening messages with `|[player_name]|`
   when the full selected player name is needed, or `|[player_first_name]|` /
   `|[player_first]|` when only the first name is needed. Avoid assumptions about
