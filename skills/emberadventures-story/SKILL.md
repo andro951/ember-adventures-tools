@@ -5197,7 +5197,13 @@ Example:
 
 - Opening messages are not save messages. They must contain only the immutable starting narrator/setup messages needed before live play begins.
 
-- If prewritten opening dialogue comes from a known opening character/NPC, put a hidden voice tag immediately before each quoted spoken line using `(Full Name) "spoken words"`. Do not include gender in the tag. The tag must be a real predefined character's proper name, not a title/job/group/generic description such as `(Gate Guard)` or `(Guild Clerk)`.
+- If prewritten opening dialogue comes from a known opening character/NPC, put a hidden voice tag immediately before **every** quoted spoken line using `(Full Name) "spoken words"`. Do not include gender in the tag. The tag must be a real predefined character's proper name, not a title/job/group/generic description such as `(Gate Guard)` or `(Guild Clerk)`.
+
+- Voice tags route only quoted dialogue. Keep action prose and narration outside the quotes; it will use the Narrator voice. Do not rely on a standalone name heading, a bold name, `she says`, `he replies`, a nearby mention of the character, or a prior tag to identify later opening dialogue. Those forms do not reliably assign a character voice. Repeat the `(Full Name)` tag before each separate quoted line, including lines spoken by the same character after narration or another speaker.
+
+  Correct: `(Avery Stone) "The gate is open." Avery steps aside. (Avery Stone) "Go now."`
+
+  Incorrect: `Avery Stone\n\n"The gate is open," she says. "Go now."`
 
 - Use plain ASCII quotes for spoken dialogue. Curly quotes can break tag stripping/voice assignment.
 
