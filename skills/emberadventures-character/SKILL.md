@@ -33,8 +33,8 @@ extends this one; it does not replace or duplicate this schema contract.
 ## Model Quality Recommendation
 
 Before substantial character creation, if the current model and
-reasoning/intelligence/effort level are known to be below 5.6 Sol High, tell the
-creator that 5.6 Sol High is recommended and will likely produce a better
+reasoning/intelligence/effort level are known to be below 5.6 Sol Medium, tell the
+creator that 5.6 Sol Medium is recommended and will likely produce a better
 character. This is a quality recommendation, not a hard gate; character creation
 should still work on lower models unless the output is visibly invalid.
 

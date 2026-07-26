@@ -64,12 +64,12 @@ Before substantial story creation, verify the current model and
 reasoning/intelligence/effort level with the creator when it is not already
 known. The minimum recommended setup for this skill is a thinking model at
 medium effort/intelligence or higher, such as ChatGPT/Codex 5.4 or higher at
-Medium. The optimal setup is 5.6 Sol at High effort/intelligence.
+Medium. The optimal setup is 5.6 Sol at Medium effort/intelligence.
 
 If the current setup is below optimal but still at or above the minimum, stop
 before story design and warn that lower model/intelligence settings may create
 a weaker story, miss long-range structure, or produce an invalid JSON file.
-Suggest increasing to 5.6 Sol High, then continue only if the creator chooses
+Suggest increasing to 5.6 Sol Medium, then continue only if the creator chooses
 to proceed.
 
 If the current setup is below the minimum, stop before story design and say it
