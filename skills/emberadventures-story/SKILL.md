@@ -4128,7 +4128,7 @@ verbatim copy of Codex process instructions.
 
 - `world_map.locations[id].connections`: Array of connected location ids. Every id should exist or be intentionally created later by objectives.
 
-- `world_map.locations[id].npcs`: Array of NPC names already known/introduced at the start. Do not put locked future-cast names here. Future placement belongs in `future_cast.items[id].location_hint`, objective rewards, and `completion_instruction`. Public/map views may show these names, so this list must contain only visible, current, named people.
+- `world_map.locations[id].npcs`: Array of NPC names already known/introduced at the start. Do not put locked future-cast names here. Future placement belongs in `future_cast.items[id].npc_location_id`, objective rewards, and `completion_instruction`. Public/map views may show these names, so this list must contain only visible, current, named people.
 
 - Do not add location `tags`. The app does not use them and they add clutter.
 
@@ -4477,7 +4477,7 @@ and the story intentionally requires Character Library selection.
   numeric string is truly the stable character id.
 
 - Supported authored shell fields are `id`, `name`, `status`,
-  `canonical_order`, `introduce_as`, `can_die`, `location_hint`,
+  `canonical_order`, `introduce_as`, `can_die`, `npc_location_id`,
   `scene_presence`, `role`, `relationship`, `note`, `personality_description`,
   `greeting`, `full_character`, `meet_condition`, `join_condition`, `on_unlock`,
   `unlocked_by`, and `last_triggered_reason`, plus the required character
@@ -4526,7 +4526,7 @@ and the story intentionally requires Character Library selection.
 - `future_cast.items[id].can_die`: Optional boolean mirrored into the introduced
   NPC/full character when the story intentionally controls plot armor.
 
-- `future_cast.items[id].location_hint`: Non-prompt placement hint for where the character is introduced. Do not expose locked future names in visible map `npcs`.
+- `future_cast.items[id].npc_location_id`: Stable NPC-directory location id for where the character is introduced. Do not expose locked future names in visible map `npcs`.
 
 - `future_cast.items[id].scene_presence`: Use `"nearby"` for an introduced NPC.
   Do not use `"active"` as a shortcut for party membership. A character joins
