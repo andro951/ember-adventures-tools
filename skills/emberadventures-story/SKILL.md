@@ -621,6 +621,7 @@ Story exports use this wrapper:
         }
       },
       "location": {
+        "npc_location_id": "loc-start",
         "universe": "Story Title",
         "world": "World Name",
         "continent": "",
