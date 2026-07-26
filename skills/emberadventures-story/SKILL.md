@@ -1418,7 +1418,11 @@ player has already visibly earned that knowledge.
 - For forced menu choices, create one visible owner objective with
   `completion_control: "choice"`, `selectable: true`, and a `choices` array.
   Each choice item should have `id`, `title`, `summary`, `rewards`, and
-  optional `effects`. Use choice `summary` for consequence-neutral
+  optional `effects`. Choice `rewards` use the exact same reward contract as
+  normal objective `rewards`; every state path must be a non-empty array, never
+  a dot string or a bare string. For example, a choice that adds a player fact
+  uses `{ "type": "add_state_list_item", "target": "Player", "field_path":
+  ["known_facts"], "value": "Fact text." }`. Use choice `summary` for consequence-neutral
   clarification when the option title alone may not be enough. Do not leave
   summaries blank for major or meaningful choices unless the title is truly
   self-explanatory. Keep `effects` empty unless they only show visible
