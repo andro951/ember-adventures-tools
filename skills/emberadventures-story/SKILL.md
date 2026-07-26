@@ -4405,11 +4405,13 @@ and the story intentionally requires Character Library selection.
 
 - `npc_directory`: Known local NPC directory for NPCs that exist now.
 
-- `npc_directory.locations`: Object keyed by location label/name.
+- `location.npc_location_id`: Stable lowercase NPC-directory location id for the current place. It must match an `npc_directory.locations` key. Use lowercase letters, numbers, and hyphens only.
 
-- `npc_directory.locations[location].label`: Player-facing location label.
+- `npc_directory.locations`: Object keyed by stable location id, never a display name, runtime token, or player-facing sentence.
 
-- `npc_directory.locations[location].characters`: Object keyed by NPC display name.
+- `npc_directory.locations[id].label`: Required player-facing location label. This value may use runtime character-name tokens; keep it separate from the stable object key.
+
+- `npc_directory.locations[id].characters`: Object keyed by NPC display name.
 
 - Do not use the old flat shape `npc_directory.<npc name>`. Runtime scene
   normalization resolves NPCs from `npc_directory.locations.*.characters`, so a
@@ -4645,6 +4647,8 @@ and the story intentionally requires Character Library selection.
 - Objective `rewards`: Array of reward objects or reward bundle references. Current reward examples include future-cast introduction, future-cast promotion to party, shared bundle references, and supported travel/location reveal behavior. Future-character rewards must use `character_id` equal to an existing `future_cast.items` object key. Do not use old reward bucket objects such as `rewards.unlock_locations`, `rewards.introduce_future_characters`, or `rewards.story_rules`; convert each bucket entry into a normal reward object. Do not use XP, level, rank, or progression-skill rewards while the progression system is shelved. Rewards should be hidden from ordinary narrator prompts unless reward handling needs them.
 
 Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+
+`introduce_future_character` must include `npc_location_id`, pointing to an existing stable `state.npc_directory.locations` key. It may include `npc_location_label` only as display text. Do not use the old `npc_location`, `location_hint`, or a player-facing location name as an NPC directory key.
 
 - Objective `requires`: Array of prerequisite objective ids. Use at least one example in templates where appropriate. Do not use step fields.
 
