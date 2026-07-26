@@ -1911,6 +1911,10 @@ Before writing or revising Objective N, inspect Objective N-1 and answer:
    action matters now?
 9. Does Objective N-1's completion instruction stop before doing Objective N
    for the player?
+10. Is Objective N's title still a pending action at activation, rather than a
+    state or event Objective N-1 has already established? Reject it if its
+    title would already be true as soon as the previous completion response
+    ends.
 
 Do this pass for each handoff in a tight sequence. For a broad/open objective,
 validate only that its starting situation and completion criteria leave room for
@@ -1941,6 +1945,13 @@ not consume the next objective's playable content. A travel objective normally
 establishes the destination and the next interaction; it does not perform the
 entire conversation, lesson, negotiation, or conflict waiting there.
 
+Do not use a completion instruction as a container for authored exposition that
+the player must receive. If a character must communicate particular facts,
+terms, motives, warnings, findings, or a reveal, create a `type: "dialogue"`
+objective and place the required wording in `dialogue_lines`. A completion
+instruction may direct the delivery's tone, reaction, movement, or immediate
+consequence, but it must not be the only place a required explanation lives.
+
 ## Dialogue Objectives
 
 Use `type: "dialogue"` when you want a character to deliver one or more lines
@@ -1961,6 +1972,15 @@ twists, personal reveals, memorable character moments, or any other situation
 where exact wording matters. For example, an authored line such as
 `"Why didn't you sell me?"` can be guaranteed to reach the player while the
 narrator still writes the surrounding scene naturally.
+
+Use a dialogue objective whenever the story needs the player to receive authored
+information before a scene can properly advance, even if the wording is not a
+famous quotation. This includes a briefing, lesson, personal disclosure,
+investigation finding, explanation of a problem, warning, or relationship
+conversation with information the player needs. Normal `story` and `side`
+objectives may contain freeform conversation, but they must not make successful
+completion depend on the narrator remembering to convey an authored list of
+facts.
 
 `dialogue_lines` is required for every dialogue objective. It must be a
 non-empty ordered array of complete literal dialogue lines:
@@ -2041,23 +2061,44 @@ route labels, endings, betrayals, or unearned consequences.
 
 ## Reusable Objective Patterns
 
-### Multi-Topic Conversation Or Teaching
+### Conversation, Teaching, And Briefing
 
-Use a normal objective for a flexible lesson, interview, debrief, negotiation,
-or conversation when exact dialogue is not needed. Use `type: "dialogue"` when
-the story needs a character to deliver authored exact lines. A dialogue chain
-may split a longer teaching exchange into natural groups so the player can
-respond between them.
+Use `type: "dialogue"` for any conversation in which a character must deliver
+authored information to the player. Put every required statement in ordered
+`dialogue_lines`; do not bury facts in a summary, `completion_criteria`, or
+`completion_instruction` and hope the narrator covers them. This is the
+required pattern for exposition, but it is also useful for a confession,
+warning, instruction, finding, personal disclosure, or any distinctive line
+that matters to the story.
 
-- Give the objective a title that identifies the person or subject.
-- Use the summary to name the broad topics.
-- For a normal objective, list each required fact or concept in
-  `completion_criteria` and use the completion instruction for the practical
-  next step.
-- For a dialogue objective, put exact required dialogue in `dialogue_lines`.
+The objective title must name the player’s pending interaction, not the result
+of that interaction. Good shapes include `Discuss the Port With the Guide`,
+`Review the Assignment`, `Ask the Witness About the Fire`, and `Hear the
+Companion's Proposal` when the proposal has not yet been delivered. Do not use
+`Arrive in the Port` after the previous objective already established arrival,
+or `Learn What the Companion Wants` when the companion still needs to explain
+it. Name the actual live action instead.
 
-Use separate objectives only when a topic naturally becomes its own scene,
-choice, conflict, travel action, or relationship beat.
+Use a short dialogue-objective chain when an explanation needs room for player
+reaction. The first objective can be player-controlled with a minimal criterion
+such as `Return yes when the player speaks to |[character:guide-id]|.` Its
+completion response then delivers the required lines. Later objectives can
+complete after the player responds, listens, asks a follow-up, or observes a
+demonstration. The explaining character should push the information forward;
+the player should never need to guess the exact question that unlocks it.
+
+Use `completion_control: "ai"` when the scene or another character must decide
+whether a flexible conversation, agreement, lesson, escort, or disclosure has
+reached its actual result. Use `completion_control: "player"` when the
+player's deliberate act itself should trigger the dialogue delivery. Either
+control mode can be used with `type: "dialogue"`.
+
+Do not make one objective require a chain such as meeting someone, receiving an
+authored explanation, understanding it, and accepting or declining an offer.
+Those are separate beats: an interaction or dialogue delivery, then a reaction
+or choice when that decision matters. Use a normal non-dialogue objective only
+when the conversation is genuinely freeform and no authored information must be
+reliably delivered before completion.
 
 ### Freeform Interlude
 
@@ -2688,6 +2729,16 @@ The title must therefore be a short playable command or clear direction by
 itself. The summary should then provide optional help and context for players
 who want a hint, not carry the whole objective by itself.
 
+Treat title validity as a state-at-activation test. The title must describe a
+specific action, interaction, decision, or discovery the player can still take
+after the preceding completion response. It must not describe an arrival,
+reveal, meeting, consequence, or other condition that has already happened.
+For example, `Reach the Flooded Archive` is valid while travel is still pending;
+`Arrive in the Flooded Archive` is invalid when the prior objective already
+completed on arrival. In that situation, use the next pending action such as
+`Discuss the Archive with the Guide`, `Inspect the Entrance`, or `Choose a
+Route Through the Archive`.
+
 Good title shapes:
 
 - `Reach the Flooded Archive`
@@ -2701,6 +2752,11 @@ Bad title shapes:
 
 - `Hear the Village Alarm` when hearing it is automatic and the objective should
   instead direct the player to respond.
+- `Arrive in Hearthcross` when the previous travel objective already completed
+  on arrival. The player has already arrived; use the next interaction or
+  decision instead.
+- `Learn What the Companion Wants` when the companion must still disclose it.
+  Use a dialogue objective such as `Talk with the Companion About Their Plans`.
 - `Do Not Force a Fake Ending` because it is creator guidance, not gameplay.
 - `Continue the Current Frontier` because it is vague/meta.
 - `Choose the Current Frontier`, `Current Frontier`, `Pick the Next Arc`, or
@@ -2729,6 +2785,11 @@ result, not merely who acts first:
   still depends on another character's substantive response, normally use
   `"ai"`. If the objective intentionally ends at the player's attempt itself,
   normally use `"player"`.
+- Do not write a player-controlled criterion that requires several later NPC
+  results, such as "meet them, listen to the explanation, understand it, and
+  decide." Use a dialogue objective with a minimal player-action criterion when
+  the player's act should trigger authored dialogue, then use an AI-controlled
+  follow-up or a direct choice for any NPC result or decision that remains.
 - Use `"choice"` when the story must force one mutually exclusive player
   decision from a list: choosing a law, ally, route, bargain, faction, romantic
   commitment, moral stance, or ending. Each option belongs in the owner
