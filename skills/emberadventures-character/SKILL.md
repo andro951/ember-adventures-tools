@@ -5,7 +5,7 @@ description: Authoritative base skill for normal EmberAdventures character defin
 
 ## Version and Update Check
 
-Current skill version: `1.0.18`.
+Current skill version: `1.0.19`.
 
 For ordinary character creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -49,7 +49,9 @@ Every standalone character-library definition must include non-null `source`,
 `can_die`. Original characters use `source: "Player"`; `creation_tool` records
 the actual tool/model/reasoning label. `genres` belongs on standalone library
 exports, not story-embedded definitions. `kink_tags` is optional searchable
-metadata. Use `can_die: false` by default for standalone definitions. The field
+metadata only for standalone library definitions; story-embedded definitions,
+future-cast shells, and future-cast `full_character` definitions must omit it.
+Use `can_die: false` by default for standalone definitions. The field
 contract below is authoritative for meanings, allowed shapes, and runtime-field
 exclusions. Do not emit `creator` or `creator_id`; EmberAdventures assigns
 creator ownership during import. This is an internal maintenance rule: never
@@ -334,7 +336,7 @@ When migrating an existing cast into gender-flexible definitions, preserve ident
 
 - `genres`: Approved broad genre/search tags for standalone character-library definitions. Do not store this on characters embedded inside story templates; embedded story characters inherit the story's `genres`. Approved values are `anime`, `fantasy`, `sci-fi`, `modern`, `historical`, `romance`, `adventure`, `action`, `comedy`, `drama`, `mystery`, `thriller`, `horror`, `dark`, `cozy`, `slice of life`, `superpower`, `isekai`, `school`, `workplace`, `political`, `war`, `crime`, `mythology`, `supernatural`, `post-apocalyptic`, `western`, `cyberpunk`, `steampunk`, and `harem`.
 
-- `kink_tags`: Optional public-library discovery metadata. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A character's behavior or preference alone does not justify the opposite player-perspective tag. Use only tags intrinsic to the interaction this standalone character definition supports, and use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
+- `kink_tags`: Optional public-library discovery metadata. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A character's behavior or preference alone does not justify the opposite player-perspective tag. Use only tags intrinsic to the interaction this standalone character definition supports, and use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags. This field is valid only on standalone public-library definitions. When a character is embedded in a story, including an NPC `full_character`, future-cast shell, or future-cast `full_character`, omit `kink_tags` entirely; story discovery tags belong only to the story template's top-level `kink_tags` and `state.meta.kink_tags`.
   - **Power Exchange:** `dominance`, `submission`, `switching`, `owning partners`, `being owned`, `serving partners`, `being served`, `disciplining partners`, `being disciplined`, `punishing partners`, `being punished`, `training partners`, `being trained`, `brat taming`, `being a brat`, `using partners freely`, `being freely used`, `taking control in cnc`, `being overpowered in cnc`, `hypnotizing partners`, `being hypnotized`, `mind controlling partners`, `being mind controlled`, `corrupting partners`, `being corrupted`, `financial domination`, `financial submission`.
   - **Bondage And Restraint:** `bondage`, `binding partners`, `being bound`, `collaring partners`, `wearing a collar`, `leashing partners`, `being leashed`, `gagging partners`, `being gagged`, `blindfolding partners`, `being blindfolded`, `sensory depriving partners`, `being sensory deprived`, `enforcing chastity`, `wearing chastity`, `denying partners orgasms`, `being denied orgasm`, `forcing partners to orgasm`, `being forced to orgasm`.
   - **Impact And Pain:** `spanking partners`, `being spanked`, `slapping partners`, `being slapped`, `whipping partners`, `being whipped`, `flogging partners`, `being flogged`, `paddling partners`, `being paddled`, `caning partners`, `being caned`, `pulling hair`, `having hair pulled`, `biting partners`, `being bitten`, `scratching partners`, `being scratched`, `choking partners`, `being choked`, `sadism`, `masochism`.

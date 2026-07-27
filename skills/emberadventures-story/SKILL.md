@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.39`.
+Current skill version: `1.0.40`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -679,7 +679,6 @@ Story exports use this wrapper:
         "source": "Original",
         "creation_tool": "<actual tool/model> (<reasoning level>)",
         "genres": ["fantasy"],
-        "kink_tags": [],
         "nsfw": false,
         "loli": false,
         "can_die": false,
@@ -945,8 +944,11 @@ normally be non-sellable.
 
 `story_shops` is an object keyed by shop id. A shop has `id`, `title`, internal
 `type` (`"character"`, `"job"`, `"general"`, or `"clothing"`), display-only `subtype`, optional
-`description`, `unlocked`, `currency`, `location`, optional `owner_npc_id`, and
-`items`. `type` is hidden
+`description`, `unlocked`, `currency`, display-only `location`, required
+`npc_location_id`, optional `owner_npc_id`, and `items`. `npc_location_id` must
+be a nonempty stable id that resolves to an existing
+`state.npc_directory.locations` key; never put a location label or prose in that
+field. `type` is hidden
 engine behavior; `subtype` is just text shown to the player, such as `Slave
 Shop`, `Companion Shop`, `Mercenary Guild`, `General Store`, `Outfitter`, or
 `Job Board`.
@@ -1538,7 +1540,7 @@ player has already visibly earned that knowledge.
 - `characters` is the saved-state schema key for party members. AI-facing and
   player-facing text should call them `party members`.
 - `npc_directory` holds NPCs and must use the current nested runtime shape:
-  `npc_directory.locations.<location label>.characters.<npc name>`. Do not use
+  `npc_directory.locations.<stable-location-id>.characters.<npc name>`. Do not use
   the old flat shape `npc_directory.<npc name>`. Runtime scene normalization
   only resolves NPCs from the nested `locations` shape, so a flat opening NPC
   can be removed from `scene.npcs_present` even if the opening text names them.
@@ -1573,7 +1575,7 @@ player has already visibly earned that knowledge.
   speak in the opening, create a real named NPC or party member.
 - If opening text contains an inline voice tag such as `(First Last)`, then that
   name must resolve before play starts: put the NPC under
-  `npc_directory.locations.<current location label>.characters.First Last` and
+  `npc_directory.locations.<current-stable-location-id>.characters.First Last` and
   include `First Last` in `scene.npcs_present`, or make them a party member and
   include them in `scene.party_members_present`.
 - For a present speaker whose identity is intentionally hidden, create the real
@@ -1673,6 +1675,11 @@ Before finishing:
   outcomes instead of relying on the live AI to invent them later.
 - `world_map.locations` exists and is an object.
 - `future_cast.enabled` exists and `future_cast.items` is an object.
+- `state.location.npc_location_id` is nonempty and resolves to an existing
+  `state.npc_directory.locations` key.
+- Every `story_shops[id].npc_location_id` is nonempty and resolves to an
+  existing `state.npc_directory.locations` key. `location` remains display text
+  only.
 - Objectives are arrays and all references are valid.
 - No objective uses boilerplate verifier text such as
   `Return yes only when the player completes: {title}`.
@@ -1823,6 +1830,11 @@ Before finishing:
 - Every `story_shops[type="job"].items[].genres[]` label exists in the
   story's public `genres[]`; otherwise the job may be hidden by genre
   filtering.
+- Recursively scan every reward container before export: objective `rewards`,
+  direct-choice rewards, AI `outcome_routes[].rewards`, reward bundles, reward
+  templates, and timed-event rewards. Every `introduce_future_character` must
+  have a `character_id` matching an existing `future_cast.items` key and a
+  nonempty `npc_location_id` resolving to `state.npc_directory.locations`.
 - Every `story_inventory.rule_flags includes X` requirement is reachable:
   either `X` is present in the starting `story_inventory.rule_flags` array or
   some objective reward can add `X` with `add_state_list_item`.
@@ -4056,7 +4068,7 @@ verbatim copy of Codex process instructions.
 
   Approved genre tags are: `anime`, `fantasy`, `sci-fi`, `modern`, `historical`, `romance`, `adventure`, `action`, `comedy`, `drama`, `mystery`, `thriller`, `horror`, `dark`, `cozy`, `slice of life`, `superpower`, `isekai`, `school`, `workplace`, `political`, `war`, `crime`, `mythology`, `supernatural`, `post-apocalyptic`, `western`, `cyberpunk`, `steampunk`, `harem`.
 
-- `kink_tags`: Public-library discovery metadata for content the story intentionally supports or guarantees. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A companion's behavior or preference alone does not justify the opposite player-perspective tag. Copy this exact array to `state.meta.kink_tags`; the two arrays must be identical. Use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags.
+- `kink_tags`: Public-library discovery metadata for content the story intentionally supports or guarantees. This is a closed vocabulary and is separate from player sexual preferences. Every value must exactly match one of the canonical lowercase strings below; these are the only valid options. Do not invent, combine, pluralize, reword, or add tags. Interpret every kink tag from the player's perspective: `dominance` means the player acts dominant, `submission` means the player acts submissive, `owning partners` means the player owns partners, and `being owned` means the player is owned. A companion's behavior or preference alone does not justify the opposite player-perspective tag. Copy this exact array to `state.meta.kink_tags`; the two arrays must be identical. Use `[]` when none apply. Do not use vanilla kissing, oral sex, vaginal sex, ordinary romance, tone, body appearance, or broad genres as kink tags. This field is story discovery metadata only: omit `kink_tags` from every story-embedded character definition, including `state.player`, `state.players[]`, `state.characters`, NPC `full_character` definitions, future-cast shells, and future-cast `full_character` definitions. Do not use an empty array there.
   - **Power Exchange:** `dominance`, `submission`, `switching`, `owning partners`, `being owned`, `serving partners`, `being served`, `disciplining partners`, `being disciplined`, `punishing partners`, `being punished`, `training partners`, `being trained`, `brat taming`, `being a brat`, `using partners freely`, `being freely used`, `taking control in cnc`, `being overpowered in cnc`, `hypnotizing partners`, `being hypnotized`, `mind controlling partners`, `being mind controlled`, `corrupting partners`, `being corrupted`, `financial domination`, `financial submission`.
   - **Bondage And Restraint:** `bondage`, `binding partners`, `being bound`, `collaring partners`, `wearing a collar`, `leashing partners`, `being leashed`, `gagging partners`, `being gagged`, `blindfolding partners`, `being blindfolded`, `sensory depriving partners`, `being sensory deprived`, `enforcing chastity`, `wearing chastity`, `denying partners orgasms`, `being denied orgasm`, `forcing partners to orgasm`, `being forced to orgasm`.
   - **Impact And Pain:** `spanking partners`, `being spanked`, `slapping partners`, `being slapped`, `whipping partners`, `being whipped`, `flogging partners`, `being flogged`, `paddling partners`, `being paddled`, `caning partners`, `being caned`, `pulling hair`, `having hair pulled`, `biting partners`, `being bitten`, `scratching partners`, `being scratched`, `choking partners`, `being choked`, `sadism`, `masochism`.
@@ -4129,7 +4141,7 @@ verbatim copy of Codex process instructions.
 
 - `meta.genres`: Array of general story-category tags. Use one or more approved genre tags from the app genre vocabulary. Do not use removed/invalid tags such as `"game"`, `"progression"`, `"survival"`, or `"litRPG"`. Do not use a single `genre` string and do not invent compound values like `"dark romance"`, `"dark fantasy"`, `"cozy adventure"`, or `"mystery thriller"`; combine simple tags instead.
 
-- `meta.kink_tags`: Copy of public `kink_tags` for local story-builder/search use. These are searchable tags, not runtime player preferences.
+- `meta.kink_tags`: Copy of public `kink_tags` for local story-builder/search use. These are searchable tags, not runtime player preferences. Together with top-level `kink_tags`, this is the only valid location for story discovery kink tags.
 
 
 - `meta.allow_spicy`: Legacy/local draft runtime setting. Clean exported/public story definitions strip `meta.allow_spicy`; do not use it as immutable story identity. Public `nsfw` should only be true when the template cannot honestly be treated as SFW-safe.
@@ -4324,6 +4336,15 @@ and the story intentionally requires Character Library selection.
   in structured state lists that already store entity ids/names, such as
   `scene.party_members_present`, `scene.npcs_present`, `scene.image_characters`,
   reward `character_id`, or objective ids.
+
+- Every character token must resolve through the canonical runtime registry:
+  `state.player`, `state.characters`, a current NPC entry under
+  `state.npc_directory.locations[id].characters` (including its
+  `full_character`), or `future_cast.items`. For an NPC who is already present
+  in the opening or another starting scene, create the real NPC-directory entry
+  with the same stable character id and use that id in tokens. Do not put a
+  starting NPC only in `future_cast` just to make tokens resolve; future cast is
+  for people not yet introduced.
 
 - Use explicit pronoun tokens whenever a gender-flexible character or the player
   would otherwise be referred to as he, she, him, her, his, or herself. The
@@ -4681,8 +4702,8 @@ and the story intentionally requires Character Library selection.
   rewards and/or its completion instruction. Only after the engine has confirmed
   completion should the dedicated follow-up prompt provide the completion
   instruction and let the narrator present the newly unlocked information. The
-  completion instruction must not be used as a substitute for durable state
-  rewards when the revealed fact needs to persist.
+   completion instruction must not be used as a substitute for durable state
+   rewards when the revealed fact needs to persist.
 
 - `objectives.active_id`: Id of the active objective at game start, or `""` if no objective starts selected.
 
@@ -4710,7 +4731,11 @@ and the story intentionally requires Character Library selection.
 
 Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
 
-`introduce_future_character` must include `npc_location_id`, pointing to an existing stable `state.npc_directory.locations` key. It may include `npc_location_label` only as display text. Do not use the old `npc_location`, `location_hint`, or a player-facing location name as an NPC directory key.
+`introduce_future_character` must include `npc_location_id`, pointing to an
+existing stable `state.npc_directory.locations` key. It may include
+`npc_location_label` only as display text when creating a new runtime bucket.
+Do not use the old `npc_location`, `location_hint`, or a player-facing location
+name as an NPC directory key.
 
 - Objective `requires`: Array of prerequisite objective ids. Use at least one example in templates where appropriate. Do not use step fields.
 
@@ -4897,8 +4922,10 @@ duplicate reward definitions; reward-only nodes shape the graph.
 - `story_shops`: Optional hidden object for story shops and job boards. Keys are
   stable shop ids. Each shop has `id`, `title`, internal `type`
   (`"character"`, `"job"`, `"general"`, or `"clothing"`), display-only `subtype`, optional
-  `description`, `unlocked`, `currency`, `location`, optional `owner_npc_id`, and
-  `items`. `story_shops` is not sent
+  `description`, `unlocked`, `currency`, display-only `location`, required
+  `npc_location_id`, optional `owner_npc_id`, and `items`. `npc_location_id`
+  must be a nonempty stable id resolving to `state.npc_directory.locations`;
+  `location` is display text only. `story_shops` is not sent
   wholesale to normal narrator prompts.
 
   Character shop items reference `future_cast.items[id]` with `character_id`
