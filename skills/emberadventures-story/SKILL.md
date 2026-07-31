@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.40`.
+Current skill version: `1.0.41`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -484,8 +484,9 @@ with rollback and choice support.
     Build objective structures so the visual Story Builder tree can display
     them cleanly: one visible objective node per playable beat, `choices[]`
     owned by the choice objective, `next_objectives` for conditional routing,
-    `requires` for unlock dependencies, and `exclusive_group` only for true
-    one-path-only branch locks.
+    `target_input_group_id` on output transitions for grouped graph inputs, and
+    `exclusive_group` only for true one-path-only branch locks. Do not author
+    legacy `requires` in new stories.
     For stories with dozens or hundreds of purchasable/talkable shop
     characters, use large-shop-stock mode: major/fixed story companions still
     need full depth, while stock characters should be compact but playable and
@@ -787,28 +788,18 @@ Story exports use this wrapper:
             "type": "story",
             "status": "active",
             "summary": "<specific player-facing description of the opening goal>",
-            "requires": [],
-            "exclusive_group": "",
-            "unlock_mode": "manual",
-            "selectable": false,
-            "available_now": true,
-            "blocked_reason": "",
-            "notes": [],
-            "rewards": [],
-            "next_objectives": [],
-            "route_control": "",
-            "outcome_routes": [],
-            "objective_mode": "",
-            "timeline_event_id": "",
-            "locked_until_complete": false,
-            "choices": [],
-            "completion_message": "",
             "completion_control": "player",
             "completion_criteria": "<specific observable condition that proves this exact opening goal is complete>",
-            "completion_instruction": "<specific immediate result, consequence, reveal, or transition for completing this exact goal>",
-            "auto_completed_from_prereqs": false,
-            "travel_location_id": "",
-            "travel_location_name": ""
+            "next_objectives": [
+              {
+                "id": "opening-objective-output-1",
+                "objective_id": "next-objective",
+                "target_input_group_id": "next-objective-input-1",
+                "completion_instruction": "<specific immediate result, consequence, reveal, or transition for completing this exact goal>",
+                "requirements": [],
+                "rewards": []
+              }
+            ]
           }
         ]
       },
@@ -916,12 +907,11 @@ present it should use:
 
 Use this only to make the manual visual tree editor nicer to open. Never put
 story lore, hidden objectives, creator notes, or AI instructions in
-`editor_data`. The visual tree editor reads normal objective fields:
-`requires` for prerequisite/dashed links, `next_objectives` for post-completion
-route/solid links, `completion_control: "choice"` plus `choices[]` for direct
-choice nodes, `exclusive_group` for mutually exclusive path locks, and
-`rewards` for deterministic effects. Do not create separate fake branch-node
-objects just to make a diagram.
+`editor_data`. The visual tree editor derives every graph edge from
+`next_objectives`, `choices`, or `outcome_routes`; each nonterminal output
+stores the destination and `target_input_group_id`. Do not duplicate those
+edges in `requires` and do not create separate fake branch-node objects merely
+to make a diagram.
 
 Optional hidden economy sections:
 
@@ -1301,6 +1291,156 @@ player has already visibly earned that knowledge.
 
 ## Objective Rules
 
+### Objective Behavior Names
+
+Use the following names when planning, reviewing, or discussing objectives.
+These are design names, not additional JSON `type` values. The serialized
+objective behavior is still determined by its control fields, output
+collection, and terminal fields.
+
+First choose one completion family:
+
+| Completion family | Serialized settings | How it works | Use it when |
+| --- | --- | --- | --- |
+| **Player Action** | `completion_control: "player"` | The verifier checks after a player-authored turn. The objective completes when the player's deliberate action, attempt, commitment, or chosen scene-ending action satisfies its one completion condition. | The player must personally do, attempt, choose, inspect, travel, sleep, leave, or otherwise decide when to advance. |
+| **Player Choice** | `completion_control: "choice"` plus `choices[]` | EmberAdventures presents authored options. Selecting an eligible option completes the objective and resolves that output without an AI completion check. | The player must choose from explicit options, including a confirmation, exact spoken response, bargain, route, allegiance, boundary, or ending decision. |
+| **AI Scene** | `completion_control: "ai"` without `evaluate_ai_on_activation` | The game checks whether the player turn gives the narrator enough reason to finish the objective, then uses later progress checks while the scene continues. | Another character, the narrator, combat, or the world must provide or decide the actual result after the player engages. |
+| **Immediate AI** | `completion_control: "ai"` plus `evaluate_ai_on_activation: true` | The game makes one immediate AI completion decision when that activation is reached. If the answer is no, the objective remains available and follows the ordinary AI Scene flow on later turns. | A just-finished scene must be assessed immediately from recent behavior or context, but judgment still requires AI interpretation. |
+| **Automatic Transition** | `completion_control: "reward_only"` plus `requirement_check_only: true` | The game makes no AI call. Once reached and its structured Completion Requirements are met, it resolves immediately, applies its selected output, and continues the dependency cascade. | A hidden convergence, deterministic gate, bookkeeping transition, automatic reward step, or state-based route should happen without narration or AI judgment. |
+
+Then choose one output shape:
+
+| Output shape | Meaning |
+| --- | --- |
+| **Linear** | One output. It applies one result and links to one next node. |
+| **Branch** | Multiple outputs. Player Choice presents them; AI Scene and Immediate AI classify among eligible private routes; Player Action and Automatic Transition check deterministic outputs in displayed priority order and use the first eligible one. |
+| **Finale** | No output. A side objective simply ends its side route. A main objective must explicitly continue in freeplay, end the adventure, or cause game over. |
+
+Combine the family and shape to name every useful behavior:
+
+| Settings | Preferred name | Typical use |
+| --- | --- | --- |
+| Player Action + Linear | **Player Action Objective** | Use an object, travel somewhere, attempt a task, go to sleep, or deliberately end free time. |
+| Player Action + Branch | **Player-Gated Route** | The player performs one action, then stored state deterministically selects the first eligible consequence. |
+| Player Action + Finale | **Player Action Finale** | The player's deliberate final action ends the route, enters freeplay, ends the adventure, or causes game over. |
+| Player Choice + one option | **Player Confirmation** | Require one explicit confirmation or exact player response before continuing. |
+| Player Choice + multiple options | **Player Branch Choice** | Present two or more meaningful authored options with visible eligibility requirements. |
+| AI Scene + Linear | **AI Scene Objective** | An NPC explains, teaches, escorts, accepts, refuses, or otherwise supplies the scene's result. |
+| AI Scene + multiple outputs | **AI Outcome Branch** | The scene resolves through AI judgment, then eligible private route criteria choose the outcome. |
+| AI Scene + Finale | **AI Scene Finale** | The narrator/world resolves the final scene and then ends the route. |
+| Immediate AI + Linear | **Immediate AI Assessment** | Judge a completed conversation, negotiation, date, interview, battle, or other established scene and continue once. |
+| Immediate AI + multiple outputs | **Immediate AI Outcome Branch** | Immediately classify a completed scene into one of several eligible hidden outcomes. |
+| Immediate AI + Finale | **Immediate AI Finale** | Immediately judge whether an already-established final situation ends the adventure. |
+| Automatic Transition + Linear | **Automatic Transition** | Apply deterministic rewards or join branches, then continue without an AI call. |
+| Automatic Transition + multiple outputs | **Automatic Router** | Choose the first eligible deterministic output, with an unrestricted fallback last when needed. |
+| Automatic Transition + Finale | **Automatic Finale** | End a route automatically when its structured requirements become true. |
+
+Player Choice with no output is invalid because it has no option to present.
+To let a choice lead to an ending, give the choice one or more outputs that link
+to explicit Finale nodes.
+
+Use modifiers without inventing more schema types:
+
+- Prefix **Side** when `type: "side"`; otherwise the objective is main story.
+- Append **with Dialogue** when an output has authored `dialogue_lines`.
+- Call a cyclic family **Recurring** when save-time graph analysis infers that
+  it can activate again. Do not author a repeatable flag.
+- Describe reward-bearing nodes normally; rewards do not create another
+  objective family.
+
+Examples of useful combined names are `Side AI Scene Objective with Dialogue`,
+`Player Branch Choice`, `Immediate AI Outcome Branch`, `Automatic Router`, and
+`Player Action Finale`. Use these names in plans and reviews so the behavior is
+clear without treating old storage fields as separate incompatible objective
+systems.
+
+### Unified Objective Decision Order
+
+Design each node in this order:
+
+1. Choose Main or Side.
+2. Choose Player or AI control.
+3. Under Player, decide whether this is a normal Player Action or a Player
+   Choice. Under AI, decide whether it is a normal AI Scene, Immediate AI, or
+   Automatic Transition.
+4. Choose Linear, Branch, or Finale.
+5. Define incoming graph groups. Transitions inside one target input group are
+   AND requirements; different groups are OR alternatives. The first objective
+   is the one story start and needs no incoming group.
+6. Add structured Completion Requirements only for resources, state, or other
+   completed objectives that must remain true before this reached objective can
+   progress.
+7. Write one player-facing title, one useful summary, optional hidden
+   `while_active_guidance`, and exactly one simple completion condition unless
+   the objective is Player Choice or Automatic Transition.
+8. Configure each output's completion instruction, optional exact dialogue,
+   rewards or reusable reward references, optional travel destination,
+   eligibility requirements, and next node.
+
+Do not author `requires` in new stories. Graph reachability comes from output
+transitions and their `target_input_group_id`. Do not duplicate the same edge
+as both an output transition and `requires`.
+
+Incoming graph groups, Completion Requirements, Completion Conditions, and
+Output Requirements answer different questions:
+
+- **Incoming groups:** Has the story reached this node? The node and its unlock
+  conditions remain hidden until one incoming OR group is satisfied.
+- **Completion Requirements:** Is the reached objective currently possible?
+  Unmet requirements keep it visible but unavailable/red and prevent selection,
+  completion checks, AI completion calls, routing, and rewards.
+- **Completion Condition:** What one player action or scene result completes the
+  active objective?
+- **Output Requirements:** Which result is eligible after completion? All
+  requirements inside one output are AND conditions; multiple outputs are OR
+  alternatives.
+
+Use objective-completed requirements inside Completion Requirements when a
+non-incoming objective must also be finished. Do not turn inventory, money,
+relationship, location, or other state requirements into graph inputs.
+
+### Recommended Combinations
+
+- **Linear story beat:** Chain Player Action Objectives and AI Scene Objectives
+  according to who controls each result. Keep each completion condition to one
+  beat.
+- **Character-led explanation:** Use an AI Scene Objective with Dialogue. For a
+  long explanation, chain several short dialogue-bearing AI Scene Objectives;
+  the first can complete when the player speaks to the character, and later
+  ones when the player responds, listens, asks a relevant follow-up, or observes
+  a demonstration.
+- **Open-ended social or downtime scene:** Use a Player Action Objective whose
+  completion condition is one explicit player-controlled exit such as leaving,
+  going to sleep, or ending the conversation. Put optional activities in the
+  summary and hidden pacing advice in `while_active_guidance`; do not make them
+  a completion checklist.
+- **Visible authored decision:** Use a Player Branch Choice. Put visible costs
+  and eligibility in each output's requirements and keep hidden consequences in
+  rewards and completion instructions.
+- **State-based consequence:** Use a Player-Gated Route or Automatic Router.
+  Order outputs from highest priority to lowest and keep the unrestricted
+  fallback last.
+- **Natural-language judgment:** Use an AI Outcome Branch when the active scene
+  itself must finish before classification. Use an Immediate AI Outcome Branch
+  after a separate player-paced scene when the completed interaction should be
+  judged once without extending or replaying it.
+- **Parallel convergence:** Assign every required incoming transition to one
+  shared input group, then use an Automatic Transition. For alternative ways
+  to reach the same node, assign each alternative to a different input group.
+- **Resource-gated action:** Put the resource in Completion Requirements when
+  the entire objective cannot proceed without it. Put it in Output Requirements
+  when only one result spends or needs it. Every bounded-resource cost reward
+  needs a matching output requirement proving the cost can be paid.
+- **Shared fixed effects:** Define one `state.reward_bundles` entry and invoke
+  it from each output with `apply_reward_bundle`.
+- **Shared parameterized behavior:** Define one typed
+  `state.reward_templates` entry and invoke it with guided typed arguments via
+  `apply_reward_template`. Use templates only when the same reward behavior is
+  reused with different characters or state targets.
+- **Ending:** Use the appropriate Player Action Finale, AI Scene Finale,
+  Immediate AI Finale, or Automatic Finale. Main finales explicitly choose
+  freeplay, ending, or game over; side finales end only the side route.
+
 - Use one active opening objective.
 - Before writing the chain, decide whether the story is Telltale-style
   branching or simpler linear/mostly-linear. Telltale-style stories should use
@@ -1313,9 +1453,8 @@ player has already visibly earned that knowledge.
   choice objective; more than half is usually too many unless explicitly
   requested.
 - Hidden main objectives should form a coherent story milestone chain. Every
-  non-terminal main objective must route somewhere intentionally: either a real
-  dependent objective requires it, or it has `next_objectives` for conditional
-  post-completion routing. If a main objective is an ending, death, or bad
+  non-terminal main objective must route somewhere intentionally through one or
+  more output transitions. If a main objective is an ending, death, or bad
   ending, make that terminal status explicit in the title/summary and use
   deterministic ending rewards such as `kill_character` with
   `ignore_can_die: true` when appropriate. Do not leave a non-final main
@@ -1325,11 +1464,13 @@ player has already visibly earned that knowledge.
 - Side objectives use `type: "side"`. Do not author `kind` solely to mark an
   objective as side content; current normalization preserves `type` and may
   discard `kind`.
-- Objective `requires` values must reference valid objective ids.
+- Every nonterminal output destination and `target_input_group_id` must be
+  valid.
 - Objective rewards must reference valid future-cast ids when they introduce
   people.
 - Objectives must not have step fields.
-- Objectives need verifier criteria and safe completion instructions.
+- Player Action, AI Scene, and Immediate AI objectives need one verifier
+  condition. Every output needs a safe authored completion instruction.
 - Objective titles are the primary player-facing instruction. Read each title
   alone and make sure the player knows the intended direction.
 - Choose `completion_control` based on who must provide the objective's actual
@@ -1362,9 +1503,10 @@ player has already visibly earned that knowledge.
   larger scene-scale objectives or bridge objectives instead.
 - Player-controlled objectives are checked after player-authored turns.
   Standard AI-controlled objectives are checked before the narrator reply on a
-  normal player turn, then receive a post-reply progress-only check. Do not use
-  them for a private result that must be decided immediately on activation; use
-  `evaluate_ai_on_activation: true` only for that narrow background case.
+  normal player turn, then receive a post-reply progress-only check. Use an
+  Immediate AI objective when one additional decision should happen as soon as
+  the node is reached; if that decision is no, it remains an ordinary AI Scene
+  objective on later turns.
 - Do not use generic completion text. Never write criteria like
   `Return yes only when the player completes: {title}` or instructions like
   `Resolve the immediate outcome of {title} and move to the next objective`.
@@ -1395,7 +1537,7 @@ player has already visibly earned that knowledge.
   stranger`, or `the sealed voice`. Put the real stored name only in hidden
   rewards/instructions that truly need it.
 - Do not create passive external-event objectives such as `Hear the Alarm` when
-  the event can be revealed in the previous objective's completion instruction.
+  the event can be revealed in the previous output's completion instruction.
 - Never create meta objectives such as `Do Not Force a Fake Ending`.
 - Player-facing objective titles/summaries must not spoil locked future cast,
   future locations, objective rewards, private AI notes, or required outcomes.
@@ -1498,7 +1640,8 @@ player has already visibly earned that knowledge.
   reputation, evidence, repair parts, or party trust before they can start.
 - In Telltale-style stories, important choice clusters should usually have 2-4
   options and later objectives must preserve the selected path through
-  `requires`, story rules, relationship rewards, state-field changes, map
+  branch-specific output transitions, story rules, relationship rewards,
+  state-field changes, map
   changes, image rewards, or death/failure endings when appropriate. Re-merge
   branches only after the permanent consequences have been recorded.
 - Use `story_inventory` for story-owned resources such as credits, parts,
@@ -1689,8 +1832,9 @@ Before finishing:
   `Resolve the immediate outcome of {title} and move to the next objective`.
 - AI-controlled objectives do not use `player completes` phrasing in
   `completion_criteria`.
-- Every objective has concrete criteria and instructions that can be understood
-  without reading the title as the only source of meaning.
+- Every objective family that uses a verifier has concrete criteria, and every
+  output has an instruction that can be understood without reading the title as
+  its only source of meaning.
 - One opening objective is active unless requested otherwise.
 - The progression design pass is complete: current state, future state,
   starting rules, reward-driven changes, map unlocks, branches, image triggers,
@@ -1705,8 +1849,8 @@ Before finishing:
   changes instead of relying only on narrator prose.
 - Side objectives have useful story/game consequences where appropriate.
 - Branches that are truly one-path-only use `exclusive_group`, branch-specific
-  `requires`, and branch-specific rewards. Branches that can all be completed
-  do not use `exclusive_group`.
+  output rewards/state markers and distinct output transitions. Branches that
+  can all be completed do not use `exclusive_group`.
 - Conditional consequence routing uses `next_objectives` on the completed
   objective, not a fake visible choice or separate empty branch node. Every
   referenced next objective exists, requirements are structured and
@@ -1714,17 +1858,16 @@ Before finishing:
 - Scene-adjudicated hidden routing uses `route_control: "ai"` and
   `outcome_routes`, never a fake visible choice. Route ids and criteria are
   private, route ids are unique, exactly one route is the no-requirements
-  fallback/default, every route has a valid next objective or `terminal: true`,
+  fallback/default, and every route has a valid next objective/input group,
   and the objective does not also contain `next_objectives`.
 - Visual tree integrity is valid: every objective id is unique, every
-  `requires` id exists, every `next_objectives[].objective_id` exists, direct
-  choice objectives have owned `choices[]`, choice options have visible titles
-  and deterministic rewards/effects, and non-final main objectives have either
-  outgoing `next_objectives` or real dependent objectives. A main objective
-  with no outgoing/dependent route must be an explicit terminal ending/death
-  objective with deterministic ending rewards. Do not leave hidden or future
-  objectives unreachable, and do not rely on EmberAdventures's fallback objective
-  picker as normal story flow.
+  output id is unique, every nonterminal output destination exists, and every
+  output has a valid `target_input_group_id`. Every non-starting main objective
+  has at least one reachable incoming input group. Direct choice objectives
+  have owned `choices[]`, visible option titles, and deterministic
+  rewards/effects. A main objective with no output is an explicit freeplay,
+  ending, or game-over Finale. Do not leave hidden/future objectives
+  unreachable or rely on fallback objective picking as normal story flow.
 - Choice-heavy stories keep choice objectives meaningful but not constant:
   roughly 30-40% choice objectives for multiple-ending/Telltale-style requests,
   and normally never more than half unless explicitly requested.
@@ -1933,15 +2076,15 @@ validate only that its starting situation and completion criteria leave room for
 multiple credible player approaches.
 
 When the user builds objectives incrementally, begin the response by restating
-the previous approved objective's completion criteria and completion instruction
+the previous approved objective's completion condition and output instruction
 before proposing the next objective. Do not jump ahead into unapproved future
 content. Preserve stable ids and unrelated story data.
 
-## Completion Instructions Are One-Time Handoffs
+## Output Instructions Are One-Time Handoffs
 
-`completion_instruction` directs the immediate narrator response after that
-objective completes. It is not permanent scene guidance, durable memory, a
-replacement for deterministic rewards, or permission to complete the next
+An output's `completion_instruction` directs the immediate narrator response
+when that result resolves. It is not permanent scene guidance, durable memory,
+a replacement for deterministic rewards, or permission to complete the next
 objective automatically.
 
 Use it to do only the work needed to hand the story forward:
@@ -1952,91 +2095,78 @@ Use it to do only the work needed to hand the story forward:
 - move the scene or advance time;
 - establish the next actionable situation.
 
-Then stop. A completion instruction should hand the scene to the next objective,
+Then stop. An output instruction should hand the scene to the next objective,
 not consume the next objective's playable content. A travel objective normally
 establishes the destination and the next interaction; it does not perform the
 entire conversation, lesson, negotiation, or conflict waiting there.
 
-Do not use a completion instruction as a container for authored exposition that
+Do not use an output instruction as a container for authored exposition that
 the player must receive. If a character must communicate particular facts,
-terms, motives, warnings, findings, or a reveal, create a `type: "dialogue"`
-objective and place the required wording in `dialogue_lines`. A completion
-instruction may direct the delivery's tone, reaction, movement, or immediate
-consequence, but it must not be the only place a required explanation lives.
+terms, motives, warnings, findings, or a reveal, enable Dialogue on that output
+and place the required wording in `dialogue_lines`. The instruction may direct
+the delivery's tone, reaction, movement, or immediate consequence, but it must
+not be the only place a required explanation lives.
 
-## Dialogue Objectives
+## Dialogue Outputs
 
-Use `type: "dialogue"` when you want a character to deliver one or more lines
-of dialogue to the player. A dialogue objective is just like a normal
-player-controlled or AI-controlled objective, except it can require characters
-to say specific authored lines in the completion response.
+Dialogue is an output modifier, not a separate objective type or completion
+system. Use ordinary `type: "story"` or `type: "side"`, choose the correct
+completion family, and put `dialogue_lines` on the output that must deliver the
+authored lines.
 
-It uses the same `completion_control`, `completion_criteria`,
-`completion_instruction`, rewards, routes, and scene-presence rewards as other
-objectives. Use `completion_control: "player"` when the player's deliberate
-action controls completion, or `completion_control: "ai"` when the scene/NPC
-controls whether the objective resolves. `type: "dialogue"` adds exact dialogue
-delivery; it does not replace or create another completion-control system.
+Use dialogue outputs for explanations, tutorials, magic rules, contract terms,
+warnings, briefings, confessions, discoveries, announcements, twists, personal
+reveals, memorable phrases, exact player responses, or any moment where
+specific wording must reach the player. An objective can have dialogue on one,
+several, or every output.
 
-Use dialogue objectives for explanations, tutorials, magic rules, contract
-terms, warnings, briefings, confessions, discoveries, important announcements,
-twists, personal reveals, memorable character moments, or any other situation
-where exact wording matters. For example, an authored line such as
-`"Why didn't you sell me?"` can be guaranteed to reach the player while the
-narrator still writes the surrounding scene naturally.
-
-Use a dialogue objective whenever the story needs the player to receive authored
-information before a scene can properly advance, even if the wording is not a
-famous quotation. This includes a briefing, lesson, personal disclosure,
-investigation finding, explanation of a problem, warning, or relationship
-conversation with information the player needs. Normal `story` and `side`
-objectives may contain freeform conversation, but they must not make successful
-completion depend on the narrator remembering to convey an authored list of
-facts.
-
-`dialogue_lines` is required for every dialogue objective. It must be a
-non-empty ordered array of complete literal dialogue lines:
+For AI-controlled outputs, `dialogue_lines` is a non-empty ordered array of
+complete literal character lines. Every entry includes the intended speaker
+tag in parentheses, quotation marks, and exact wording:
 
 ```json
 {
-  "type": "dialogue",
-  "title": "Talk to |[character_first:mentor-id]|",
-  "summary": "|[character_first:mentor-id]| has important information to explain.",
-  "completion_control": "player",
-  "completion_criteria": "Return yes when the player speaks to |[character:mentor-id]|.",
+  "id": "mentor-explanation-output",
+  "objective_id": "respond-to-mentor",
+  "target_input_group_id": "respond-to-mentor-input-1",
   "completion_instruction": "|[character_first:mentor-id]| speaks with patient precision and watches for the player's reaction.",
   "dialogue_lines": [
     "(|[character:mentor-id]|) \"First required line.\"",
     "(|[character:mentor-id]|) \"Second required line.\""
-  ]
+  ],
+  "requirements": [],
+  "rewards": []
 }
 ```
 
-Each `dialogue_lines` entry must contain the intended speaker tag in
-parentheses, quotation marks, and the exact wording that must reach the player.
 Use normal runtime character-reference tokens so the line resolves to the
-character's actual presentation/name in the playthrough.
+character's actual playthrough name. EmberAdventures gives the output's normal
+`completion_instruction` to the narrator and requires every dialogue line
+exactly once in authored order. The narrator may respond to the player's last
+action first when necessary and may add narration, reactions, demonstrations,
+or other dialogue between required lines, but must not paraphrase, merge, omit,
+reorder, or alter them.
 
-When the objective completes, EmberAdventures uses the normal shared
-`completion_instruction` path, then requires the narrator to deliver every
-`dialogue_lines` entry exactly once in the authored order. The narrator may add
-narration, reactions, demonstrations, or other dialogue between those lines,
-but must not paraphrase, merge, omit, reorder, or alter a required line.
+The output `completion_instruction` remains general guidance for the complete
+response. It can direct tone, behavior, narration, demonstration, emotional
+reaction, scene movement, or another appropriate beat. Do not create a second
+dialogue-specific instruction field.
 
-`completion_instruction` remains general guidance for the entire completion
-response. It can direct tone, character behavior, narration, a demonstration,
-an emotional reaction, scene movement, or another appropriate beat. Do not add
-a second dialogue-specific instruction field.
+For player-controlled dialogue, use Player Choice with
+`choice_response_mode: "exact_text"` and put the required player wording in the
+selected output's `player_text`. Use `choice_response_mode: "optional_text"`
+when the option should permit the player to add or omit their own response.
+Do not put a character selector on player dialogue; the speaker is the player.
 
 ### Exposition Pattern
 
-Dialogue objectives are the required tool when a story needs to deliver
-authored exposition reliably. Do not list a large set of facts in
-`completion_criteria` or `completion_instruction` and hope the narrator covers
-them. Put the exact information in `dialogue_lines`.
+Dialogue outputs are the required tool when a story must deliver authored
+exposition reliably. Do not list many facts in `completion_criteria` or
+`completion_instruction` and hope the narrator covers them. Put the exact
+information in output `dialogue_lines`.
 
-For a character-led explanation, use a short dialogue-objective chain when the
-player should have a chance to react between groups of information. The first
+For a character-led explanation, use a short chain of AI Scene Objectives with
+Dialogue when the player should react between information groups. The first
 objective can complete when the player directly speaks to the explaining
 character:
 
@@ -2044,8 +2174,8 @@ character:
 Return yes when the player speaks to |[character:mentor-id]|.
 ```
 
-Later dialogue objectives can complete when the player responds, shows signs
-of listening, asks a relevant follow-up, asks the character to continue, or
+Later objectives can complete when the player responds, shows signs of
+listening, asks a relevant follow-up, asks the character to continue, or
 observes a demonstration:
 
 ```text
@@ -2055,9 +2185,9 @@ character to continue, or observes the demonstration. Do not complete when the
 player changes the subject, leaves, or merely remains nearby without engaging.
 ```
 
-The explaining character should move the dialogue forward. Do not require the
-player to guess which question unlocks the next fact or to ask for information
-the character has already been directed to deliver.
+The explaining character drives the explanation. Do not require the player to
+guess which question unlocks the next fact or ask for information the
+character has already been directed to deliver.
 
 ## Objective Summaries Describe The Live Situation
 
@@ -2071,17 +2201,67 @@ objective: likely person, place, action, resource, topic, or constraint. It must
 add meaningful context beyond the title without exposing hidden future outcomes,
 route labels, endings, betrayals, or unearned consequences.
 
+## One Objective, One Completion Beat
+
+Every objective must require only one simple event, action, decision, result, or
+scene-ending condition to complete. An objective is not a checklist. Do not put
+an entire conversation, investigation, lesson, trip, relationship change, or
+scene plan into one `completion_criteria`.
+
+Treat these as strong warning signs that the objective is doing too much:
+
+- the completion criterion contains a list of things that must all happen;
+- the criterion joins separate required beats with `and`, `then`, `after`, or
+  similar sequencing language;
+- the title or summary names several distinct actions;
+- completion requires the player to ask several questions, visit several
+  places, receive several explanations, make several decisions, or produce
+  several unrelated results;
+- the narrator would need to track a hidden checklist before it could return
+  yes.
+
+When any warning sign appears, assume the objective is wrong and restructure it
+unless every clause is merely another equivalent way to prove the same single
+completion beat. An `or` list may describe equivalent evidence for one result;
+it must not disguise several separate tasks.
+
+Use one of these three normal structures when a scene needs many things:
+
+1. **Sequential objective chain.** Create a chain in which each objective waits
+   for one simple thing, completes, and hands off to the next objective. Use
+   this for authored explanations, investigations with ordered discoveries,
+   rituals, training, multi-stage travel, or any scene where several distinct
+   beats must reliably occur.
+2. **Open-ended scene with one player-controlled exit.** Put the optional
+   topics, interactions, activities, and opportunities in the player-facing
+   summary, but give the objective one unmistakable completion action such as
+   leaving the room, going to sleep, ending the date, departing the camp, or
+   explicitly concluding the meeting. Use this mainly for flexible,
+   non-critical play such as dinner conversation, downtime, casual dates,
+   socializing, or exploration where the listed activities do not all need to
+   happen. Suggested content is not a hidden completion checklist.
+3. **Objective tree.** Branch into separate objectives when different player
+   actions, discoveries, choices, or outcomes should cause different events.
+   Branches may converge on a later shared objective or remain permanently
+   separate when the consequences should persist.
+
+Do not solve an overloaded objective by making its criterion vaguer. Split the
+required beats, make optional material genuinely optional behind one clear exit,
+or model the alternatives as branches. During the final objective audit, inspect
+every criterion containing a list or `and` statement and either restructure it
+or confirm that it expresses only one completion beat.
+
 ## Reusable Objective Patterns
 
 ### Conversation, Teaching, And Briefing
 
-Use `type: "dialogue"` for any conversation in which a character must deliver
-authored information to the player. Put every required statement in ordered
-`dialogue_lines`; do not bury facts in a summary, `completion_criteria`, or
-`completion_instruction` and hope the narrator covers them. This is the
-required pattern for exposition, but it is also useful for a confession,
-warning, instruction, finding, personal disclosure, or any distinctive line
-that matters to the story.
+Use an AI Scene Objective with Dialogue for any conversation in which a
+character must deliver authored information to the player. Put every required
+statement in the selected output's ordered `dialogue_lines`; do not bury facts
+in a summary, completion condition, or completion instruction and hope the
+narrator covers them. This is the required pattern for exposition, but it is
+also useful for a confession, warning, instruction, finding, personal
+disclosure, or any distinctive line that matters.
 
 The objective title must name the player’s pending interaction, not the result
 of that interaction. Good shapes include `Discuss the Port With the Guide`,
@@ -2091,24 +2271,24 @@ Companion's Proposal` when the proposal has not yet been delivered. Do not use
 or `Learn What the Companion Wants` when the companion still needs to explain
 it. Name the actual live action instead.
 
-Use a short dialogue-objective chain when an explanation needs room for player
-reaction. The first objective can be player-controlled with a minimal criterion
-such as `Return yes when the player speaks to |[character:guide-id]|.` Its
-completion response then delivers the required lines. Later objectives can
-complete after the player responds, listens, asks a follow-up, or observes a
-demonstration. The explaining character should push the information forward;
-the player should never need to guess the exact question that unlocks it.
+Use a short chain of AI Scene Objectives with Dialogue when an explanation
+needs room for player reaction. The first can use a minimal condition such as
+`Return yes when the player speaks to |[character:guide-id]|.` Its output then
+delivers the required lines. Later nodes can complete after the player
+responds, listens, asks a follow-up, or observes a demonstration. The
+explaining character pushes the information forward; the player should never
+need to guess the exact question that unlocks it.
 
 Use `completion_control: "ai"` when the scene or another character must decide
 whether a flexible conversation, agreement, lesson, escort, or disclosure has
 reached its actual result. Use `completion_control: "player"` when the
 player's deliberate act itself should trigger the dialogue delivery. Either
-control mode can be used with `type: "dialogue"`.
+control mode can place `dialogue_lines` on its output.
 
 Do not make one objective require a chain such as meeting someone, receiving an
 authored explanation, understanding it, and accepting or declining an offer.
 Those are separate beats: an interaction or dialogue delivery, then a reaction
-or choice when that decision matters. Use a normal non-dialogue objective only
+or choice when that decision matters. Omit output dialogue only
 when the conversation is genuinely freeform and no authored information must be
 reliably delivered before completion.
 
@@ -2206,12 +2386,12 @@ disbelief, restrained ridicule, calculation, or conflicting reactions.
 
 ## Character Introduction And Map Timing
 
-A visible introduction in `completion_instruction` is not a substitute for a
-usable character definition. Predefine recurring or important later characters
-in `future_cast` with full data. At the objective where they visibly arrive,
-use the applicable introduction/promotion/state rewards so their identity,
-availability, and scene presence persist. Do not store a character's identity
-only as a story rule.
+A visible introduction in an output `completion_instruction` is not a
+substitute for a usable character definition. Predefine recurring or important
+later characters in `future_cast` with full data. On the output where they
+visibly arrive, use the applicable introduction/promotion/state rewards so
+their identity, availability, and scene presence persist. Do not store a
+character's identity only as a story rule.
 
 Distinguish map existence, discovery, travel availability, current location, and
 focus location. A location may exist in the template but remain hidden or
@@ -2255,8 +2435,9 @@ When Codex is asked to modify a local story file:
 4. Write the output.
 5. Reopen the written output and parse it as JSON.
 6. Verify exact expected values: objective count and ids, edited titles,
-   summaries, criteria, instructions, rewards, `requires`, `next_objectives`,
-   location references, and any other requested values.
+   summaries, criteria, instructions, completion requirements, output
+   requirements, rewards, output destinations/input groups, location
+   references, and any other requested values.
 7. Report success only after that verification and give the exact output path.
 
 Do not claim a write succeeded merely because an edit command was issued. This
@@ -2292,31 +2473,34 @@ Recommended object:
   "title": "Short Action Title",
   "type": "story",
   "status": "hidden",
-  "summary": "One sentence explaining why this beat matters.",
-  "rewards": [],
-  "requires": ["previous-objective-id"],
-  "next_objectives": [],
-  "travel_location_id": "",
-  "travel_location_name": "",
-  "unlock_mode": "manual",
-  "exclusive_group": "",
-  "selectable": false,
-  "available_now": false,
-  "blocked_reason": "",
-  "notes": [],
-  "completion_message": "",
+  "summary": "Player-facing context and a useful hint.",
+  "while_active_guidance": "Optional hidden AI guidance while this objective is active.",
   "completion_control": "player",
-  "completion_criteria": "Return yes only when the player has asked the wounded courier who attacked them, inspected the sealed letter, or otherwise clearly committed to investigating the ambush.",
-  "completion_instruction": "Let the courier reveal one urgent lead, show the immediate danger created by the letter, and point the scene toward the next concrete investigation objective.",
-  "auto_completed_from_prereqs": false
+  "completion_criteria": "Return yes when the player opens the sealed door.",
+  "completion_requirements": [],
+  "next_objectives": [
+    {
+      "id": "stable-kebab-id-output-1",
+      "objective_id": "next-stable-objective-id",
+      "target_input_group_id": "next-stable-objective-input-1",
+      "completion_instruction": "Show the door opening and reveal the room beyond.",
+      "dialogue_lines": [],
+      "requirements": [],
+      "rewards": []
+    }
+  ]
 }
 ```
 
 Opening objective differences:
 
 - `status`: `"active"`
-- `requires`: `[]`
-- `available_now`: `true`
+- Its id is `state.objectives.active_id`.
+- It has no incoming graph transition.
+
+All other main objectives start `status: "hidden"` and are reached through
+output transitions. Do not author empty/default optional fields merely to show
+that they exist.
 
 ## Chain Design
 
@@ -2581,15 +2765,17 @@ objectives.
 
 Use these branch shapes deliberately:
 
-- Immediate merge: a choice records relationship/stat/rule consequences, then
-  the next shared objective requires only the choice owner. Use for short
+- Immediate merge: each choice output records relationship/stat/rule
+  consequences, then all outputs link to the same shared objective through
+  separate OR input groups. Use for short
   boundary, stance, flirt/refuse, mercy/cruelty, or tone choices.
 - Optional with skip: a choice offers an optional scene and a skip option, such
   as `Knock on the Companion's Door` versus `Go to Bed`. Use this for optional romance
   or NSFW moments inside the main objective flow when the user does not want side
   objectives. Put only visible requirements/effects in player-facing option text.
 - Multi-route convergence: separate route objectives/chains can all be completed
-  before a larger event. The merge objective requires every route terminal. Do
+  before a larger event. The convergence input group requires every route's
+  final transition. Do
   not use `exclusive_group` for these, because the routes are swappable and all
   valid.
 - Fail-forward: a bad choice continues the story with debt, damage, distrust,
@@ -2646,12 +2832,23 @@ Every objective needs:
   engages or cooperates; `"choice"` when EmberAdventures should show a forced
   player choice menu, complete the owner objective immediately, and apply the
   selected option's rewards without AI verification; `"reward_only"` only for a
-  hidden deterministic transition node that immediately applies rewards and
-  moves to its next objective when reached. Follow the detailed control-choice
-  guidance in the Objective Authoring section.
-- `evaluate_ai_on_activation`: Optional boolean, default `false`. Valid only with `completion_control: "ai"`. Set it to `true` only for a hidden/private adjudication objective that must evaluate immediately when it becomes active using an already-finished scene and current state. It resolves silently: do not rely on it to narrate, reveal, introduce, or extend anything.
-- `completion_criteria`: private verifier criteria for when the objective is complete and, where useful, what counts only as progress.
-- `completion_instruction`: narrator instruction after completion, especially for introducing unlocked predefined future-cast characters.
+  hidden Automatic Transition with `requirement_check_only: true`.
+- `evaluate_ai_on_activation`: Optional `true` only for an Immediate AI
+  objective. It causes one activation-time AI decision and does not replace the
+  ordinary AI Scene flow when that decision is no.
+- `completion_requirements`: Optional structured requirements that must remain
+  true before a reached objective can be selected, checked, routed, or
+  completed.
+- `completion_criteria`: One private verifier condition for Player Action, AI
+  Scene, and Immediate AI objectives. Omit it for Player Choice and Automatic
+  Transition.
+- One output collection: `next_objectives` for deterministic Linear/Branch
+  outputs, `choices` for Player Choice, or `outcome_routes` for AI-controlled
+  hidden Branch outcomes.
+- Every output needs a stable id, its own completion instruction, optional
+  dialogue/rewards/travel/requirements, and a valid destination plus
+  `target_input_group_id`. A Finale intentionally has no output and instead
+  declares its terminal behavior.
 
 `completion_criteria` and `completion_instruction` must be authored content,
 not generated boilerplate. Never write:
@@ -2673,12 +2870,12 @@ criteria must instead be decidable immediately from an already-finished scene,
 recent messages, and current state; it must not require another player action or
 narrator reply.
 
-Every non-terminal main objective must route intentionally. Use a dependent
-objective with `requires`, use `next_objectives` when the next route depends
-on structured state, or use hidden `outcome_routes` when it depends on natural
-scene context. A main objective with none of those routes must be an explicit
-terminal ending/death objective with deterministic ending rewards. Do
-not rely on EmberAdventures's fallback objective picker as normal story flow.
+Every non-terminal main objective must route intentionally. Use
+`next_objectives` for deterministic outputs, `choices` for visible player
+choices, or hidden `outcome_routes` when results depend on natural scene
+context. A main objective with no output must be an explicit freeplay, ending,
+or game-over Finale. Do not rely on fallback objective picking as normal story
+flow.
 
 Do not design objectives so one player message should complete several
 objectives at once. EmberAdventures checks one selected objective at a time. If one
@@ -2768,7 +2965,8 @@ Bad title shapes:
   on arrival. The player has already arrived; use the next interaction or
   decision instead.
 - `Learn What the Companion Wants` when the companion must still disclose it.
-  Use a dialogue objective such as `Talk with the Companion About Their Plans`.
+  Use an AI Scene Objective with Dialogue such as
+  `Talk with the Companion About Their Plans`.
 - `Do Not Force a Fake Ending` because it is creator guidance, not gameplay.
 - `Continue the Current Frontier` because it is vague/meta.
 - `Choose the Current Frontier`, `Current Frontier`, `Pick the Next Arc`, or
@@ -2799,26 +2997,27 @@ result, not merely who acts first:
   normally use `"player"`.
 - Do not write a player-controlled criterion that requires several later NPC
   results, such as "meet them, listen to the explanation, understand it, and
-  decide." Use a dialogue objective with a minimal player-action criterion when
-  the player's act should trigger authored dialogue, then use an AI-controlled
-  follow-up or a direct choice for any NPC result or decision that remains.
+  decide." Use an AI Scene Objective with Dialogue and a minimal engagement
+  criterion when the NPC should drive the authored explanation, then use
+  another objective or a Player Choice for any later decision.
 - Use `"choice"` when the story must force one mutually exclusive player
   decision from a list: choosing a law, ally, route, bargain, faction, romantic
   commitment, moral stance, or ending. Each option belongs in the owner
   objective's `choices[]` array; do not create one top-level objective per
   option.
-- Use `"reward_only"` only for hidden infrastructure nodes that immediately
-  apply deterministic rewards and route forward when reached. These are useful
-  for convergence/transition points in a graph, not for visible player goals.
+- Use `"reward_only"` together with `requirement_check_only: true` only for an
+  Automatic Transition, Automatic Router, or Automatic Finale. It resolves
+  deterministic requirements, outputs, travel, dialogue-free instructions, and
+  rewards without an AI call.
 
 Do not split every attempt/outcome into two objectives. If `Defeat the Bandits`
 is the player-facing goal, one AI-controlled objective is often correct: the
 player knows what to try, and the narrator decides whether the attempt succeeds.
 
 If an external event merely sets up the next action, usually fold that event
-into the previous objective's `completion_instruction` instead of making it a
-separate passive objective. Example: after `Leave the Barn`, the completion
-instruction can reveal smoke, screaming, and bandits; the next objective can be
+into the previous output's `completion_instruction` instead of making it a
+separate passive objective. Example: after `Leave the Barn`, the output
+instruction can reveal smoke, screaming, and bandits; its destination can be
 `Defeat the Bandits`.
 
 Never create meta/process objectives such as `Do Not Force a Fake Ending`,
@@ -2832,12 +3031,13 @@ future character names or imply a future character role before that character is
 introduced by objective rewards. Avoid objectives like `Meet the Smith`, `Find a
 Healer`, `Secure a Captain`, or `Hire a Guide` when a locked future-cast
 character fills that role. Name the problem or situation instead, then use
-`completion_instruction` plus rewards to introduce the predefined character.
+the selected output's `completion_instruction` plus rewards to introduce the
+predefined character.
 
-`completion_instruction` is hidden narrator guidance for the specific objective.
+`completion_instruction` is hidden narrator guidance for one specific output.
 Do not paste broad boilerplate into it. Apply spoiler rules while writing it,
-but do not store the spoiler rule itself. Good instructions describe the actual
-immediate outcome, consequence, reveal, or transition.
+but do not store the spoiler rule itself. Good instructions describe that
+output's actual immediate outcome, consequence, reveal, or transition.
 
 Examples:
 
@@ -2846,7 +3046,16 @@ Examples:
   "title": "Question the Courier",
   "completion_control": "player",
   "completion_criteria": "Return yes only when the player asks the courier what happened, checks the letter, or clearly chooses to investigate the ambush.",
-  "completion_instruction": "Have the courier give one urgent lead, keep the ambush's deeper mastermind hidden, and make the next objective a concrete place, person, or clue to pursue."
+  "next_objectives": [
+    {
+      "id": "question-courier-output",
+      "objective_id": "pursue-the-lead",
+      "target_input_group_id": "pursue-the-lead-input-1",
+      "completion_instruction": "Have the courier give one urgent lead, keep the ambush's deeper mastermind hidden, and point toward the next concrete clue.",
+      "requirements": [],
+      "rewards": []
+    }
+  ]
 }
 ```
 
@@ -2855,7 +3064,16 @@ Examples:
   "title": "Defeat the Gate Raiders",
   "completion_control": "ai",
   "completion_criteria": "Return yes only when the narrator has resolved the gate fight and the raiders are defeated, routed, captured, or no longer an immediate threat.",
-  "completion_instruction": "Resolve the fight according to the player's approach and current allies, show the cost or consequence, and transition to the aftermath objective."
+  "next_objectives": [
+    {
+      "id": "defeat-gate-raiders-output",
+      "objective_id": "face-the-aftermath",
+      "target_input_group_id": "face-the-aftermath-input-1",
+      "completion_instruction": "Resolve the fight according to the player's approach and current allies, show the cost or consequence, and establish the aftermath.",
+      "requirements": [],
+      "rewards": []
+    }
+  ]
 }
 ```
 
@@ -2879,13 +3097,11 @@ rewards would otherwise appear in more than one place. Story trees generated by
 this skill should have zero repeated reward definitions; repeated effects must
 be factored into a named bundle and referenced from each location.
 
-Use a hidden `completion_control: "reward_only"` objective when the graph needs
-an explicit convergence or transition node that applies rewards and then moves
-to the next objective. Use this for graph structure, shared transition points,
-or readable visual-tree layout. Do not use reward-only objectives merely to
-avoid repeated reward JSON; use `state.reward_bundles` for fixed deduplication
-and `state.reward_templates` when the repeated behavior needs typed character-id
-or path parameters.
+Use an Automatic Transition when the graph needs deterministic convergence,
+bookkeeping, rewards, or a state-based route without an AI call. Do not add one
+merely to deduplicate reward JSON; use `state.reward_bundles` for fixed
+deduplication and `state.reward_templates` when repeated behavior needs typed
+character-id or path parameters.
 
 ### Definition Fields Versus Runtime State
 
@@ -2919,13 +3135,37 @@ belongs in runtime `known_facts`. Use an `add_state_list_item` reward with
 `field_path: ["player", "known_facts"]` for the player, or target a character and use
 `field_path: ["known_facts"]`. Never target `starting_known_facts`.
 
-Valid generic runtime reward targets include existing fields under
-`player`, a resolved character's runtime state, `story_inventory`,
-`world_flags`, `scene`, `story_memory`, and other authored mutable state. List
-rewards require an existing array target. Numeric rewards require an existing
-numeric target. Prefer dedicated rewards such as `adjust_relationship`,
-`adjust_story_inventory`, `grant_outfit`, `equip_outfit`, image rewards, and
-objective start/completion rewards whenever one owns the operation.
+Generic state-path rewards use a positive runtime allowlist. A path is not valid
+merely because that object or value exists in the authored starting state.
+Import and public upload reject every path outside these approved mutable
+runtime areas:
+
+- `story_inventory`, `world_flags`, and authored `progression` values;
+- mutable `player` fields: `appearance`, `can_die`, `clothing`, `held_items`,
+  `inventory`, `known_facts`, `physical_state`, `pose`, `role`,
+  `state_of_mind`, and `stats`;
+- mutable resolved-character fields: `age`, `appearance`, `arousal`,
+  `attraction`, `boldness`, `can_die`, `clothing`, `held_items`, `inventory`,
+  `known_facts`, `personality_description`, `physical_state`, `pose`,
+  `relationship_to_player`, `role`, `speech_style`, `state_of_mind`, `stats`,
+  `trust`, and `affection`;
+- `scene.party_members_present`, `scene.npcs_present`,
+  `scene.image_characters`, `scene.summary`, and the documented intimacy mode
+  fields;
+- the documented `story_memory` lists;
+- current `location` display fields and the current/focus/travel-history fields
+  under `world_map`;
+- `story_shops.<stable-shop-id>.unlocked`;
+- the supported runtime status, relationship, and location-hint fields on an
+  existing `future_cast.items.<stable-character-id>` entry.
+
+List rewards require an existing array target. Numeric rewards require an
+existing numeric target. Prefer dedicated rewards such as
+`adjust_relationship`, `adjust_story_inventory`, `grant_outfit`,
+`equip_outfit`, image rewards, and objective start/completion rewards whenever
+one owns the operation. If a new mutable state domain is needed, add it to the
+engine's validated allowlist first; do not assume arbitrary custom top-level
+objects are writable.
 
 Invalid reward targets include:
 
@@ -2936,7 +3176,9 @@ Invalid reward targets include:
 - a definition's immutable `outfits` array when the intended action is granting
   or equipping runtime clothing;
 - any missing path, non-list target used by a list reward, or nonnumeric target
-  used by a numeric reward.
+  used by a numeric reward;
+- any generic state path outside the engine's positive mutable-runtime
+  allowlist, even when the path already exists in the story's starting state.
 
 Story import and publication validation reject invalid reward paths. Runtime
 reward application also preflights the complete reward transaction before any
@@ -3361,7 +3603,7 @@ Outfit rewards:
 
 Use `grant_outfit` when story progression gives a player, party character, or
 other authored character a new saved outfit. `character_id` must be the stable
-id of a character definition in the story. The `outfit` must use the normal
+id of a character definition in the story. A universal `outfit` uses the normal
 character outfit schema with a stable `id`, human-readable `name`, and only
 canonical clothing-slot keys. By default this adds the outfit without changing
 what the character is currently wearing.
@@ -3385,6 +3627,42 @@ what the character is currently wearing.
 }
 ```
 
+When an outfit is presentation-specific, omit `outfit` and provide
+`male_outfit`, `non_male_outfit`, or both. The engine selects only the variant
+matching the character's gender, which was finalized when the playthrough was
+created. A nonmatching optional grant is an intentional no-op. This does not
+change the character's gender.
+
+```json
+{
+  "type": "grant_outfit",
+  "character_id": "mira-vale",
+  "male_outfit": {
+    "id": "private-evening",
+    "name": "Private Evening Outfit",
+    "clothing": {
+      "shirt": "fitted black evening shirt",
+      "pants": "tailored black evening trousers"
+    }
+  },
+  "non_male_outfit": {
+    "id": "private-evening",
+    "name": "Private Evening Outfit",
+    "clothing": {
+      "shirt": "fitted black evening blouse",
+      "skirt": "long black evening skirt"
+    }
+  }
+}
+```
+
+`male_outfit` and `non_male_outfit` must use the same stable outfit id when
+both are present. Either variant may be omitted only when the grant is optional
+and does not equip the outfit. If `equip: true`, both variants are required. If
+the same objective contains an `equip_outfit` reward for that granted outfit
+id, both variants are also required even when the grant itself has
+`equip: false`.
+
 Use `equip_outfit` when the character already owns the outfit and the objective
 must immediately change what they are wearing. This atomically applies the
 saved clothing snapshot and updates `active_outfit_id`; never imitate an outfit
@@ -3401,6 +3679,36 @@ swap with `set_state_field`.
 When receiving the outfit and immediately wearing it are one indivisible
 reward, set `"equip": true` on `grant_outfit`. Do not also add a redundant
 `equip_outfit` reward for the same action.
+
+Use `delete_outfit` to permanently remove one owned runtime outfit. If it was
+active, the character's active outfit id and current clothing are cleared.
+Deleting an outfit the character does not own is an idempotent no-op.
+
+```json
+{
+  "type": "delete_outfit",
+  "character_id": "mira-vale",
+  "outfit_id": "damaged-uniform"
+}
+```
+
+Use `delete_all_outfits` only for a permanent wardrobe replacement, such as a
+major transformation that makes every old outfit unusable. It removes every
+owned runtime outfit and clears current clothing. Follow it in the same atomic
+reward transaction with one or more `grant_outfit` rewards, equipping the new
+default outfit as appropriate.
+
+```json
+{
+  "type": "delete_all_outfits",
+  "character_id": "mira-vale"
+}
+```
+
+An `equip_outfit` failure is a warning rather than a failed reward transaction.
+The warning explains the character and outfit the story attempted to use and
+offers Export Both diagnostics. Import validation should still prevent every
+statically detectable malformed outfit reward.
 
 Story-rule gates and current constraints:
 
@@ -3500,16 +3808,16 @@ Use `travel_location_id` and `travel_location_name` when completing the objectiv
 Use `exclusive_group` only for mutually exclusive branch-choice objectives where
 one selected/completed path should permanently lock the others until the player
 rolls back to an older state snapshot. Put the `exclusive_group` on the visible
-choice owner objective, and make each branch's later objectives `requires` that
-branch's own chosen result so losing-branch descendants stay hidden.
+choice owner objective, and connect each selected output only to its own branch
+so losing-branch descendants stay hidden.
 Do not use `exclusive_group` for optional branches, parallel tasks, side content,
 or hub goals that can all be completed. Each exclusive branch should carry real
 reward differences; a branch that only changes prose is likely to collapse back
 into the same play path.
 
 If several routes must all be completed before a larger event, model them as
-parallel route chains with a convergence objective that requires all route
-terminals. Do not mark those route chains exclusive.
+parallel route chains whose terminal transitions share one destination input
+group on an Automatic Transition. Do not mark those route chains exclusive.
 
 For threshold-gated choices, requirements should be visible player-facing
 requirements, not secret alternate objective text. If the option exists, show it
@@ -3536,19 +3844,19 @@ options:
   "type": "story",
   "status": "hidden",
   "summary": "Choose the first boundary your violet briar magic will defend.",
-  "requires": ["reach-first-law-choice"],
   "exclusive_group": "first-law-choice",
-  "selectable": true,
   "completion_control": "choice",
-  "completion_criteria": "Completed immediately by EmberAdventures when the player selects one option from the choice menu.",
-  "completion_instruction": "Resolve only the selected law and show the court reacting to that choice.",
-  "rewards": [],
+  "choice_response_mode": "optional_text",
   "choices": [
     {
       "id": "law-freedom",
       "title": "Defend Freedom",
-      "summary": "",
+      "summary": "Make freedom and agency the first principle.",
       "effects": [],
+      "requirements": [],
+      "completion_instruction": "Resolve only the law of freedom and show the court reacting to that choice.",
+      "next_objective_id": "respond-to-first-law",
+      "target_input_group_id": "respond-to-first-law-input-1",
       "rewards": [
         {
           "type": "add_story_rule",
@@ -3560,8 +3868,12 @@ options:
     {
       "id": "law-vengeance",
       "title": "Answer Theft With Vengeance",
-      "summary": "",
+      "summary": "Make retaliation against theft the first principle.",
       "effects": [],
+      "requirements": [],
+      "completion_instruction": "Resolve only the law of vengeance and show the court reacting to that choice.",
+      "next_objective_id": "respond-to-first-law",
+      "target_input_group_id": "respond-to-first-law-input-2",
       "rewards": [
         {
           "type": "add_story_rule",
@@ -3600,37 +3912,35 @@ or a separate branch node:
 {
   "id": "resolve-public-rescue",
   "title": "Help Without Being Seen",
+  "summary": "Keep the rescue quiet while getting everyone out safely.",
   "completion_control": "ai",
-  "rewards": [
-    {
-      "type": "adjust_story_inventory",
-      "path": "public_exposure",
-      "amount": 2
-    },
-    {
-      "type": "adjust_story_inventory",
-      "path": "story_inventory.pack_share",
-      "operation": "multiply",
-      "amount": 1.05
-    }
-  ],
+  "completion_criteria": "Return yes when the rescue attempt has been resolved and the group is out of immediate danger.",
   "next_objectives": [
     {
+      "id": "public-rescue-exposed-output",
       "objective_id": "agency-opens-a-file",
+      "target_input_group_id": "agency-opens-a-file-input-1",
+      "completion_instruction": "Show evidence that the rescue drew official attention.",
       "requirements": [
         { "path": "story_inventory.public_exposure", "op": ">=", "value": 5 }
-      ]
+      ],
+      "rewards": []
     },
     {
-      "objective_id": "stay-below-the-radar"
+      "id": "public-rescue-hidden-output",
+      "objective_id": "stay-below-the-radar",
+      "target_input_group_id": "stay-below-the-radar-input-1",
+      "completion_instruction": "Show the group escaping without attracting official attention.",
+      "requirements": [],
+      "rewards": [],
+      "fallback": true
     }
   ]
 }
 ```
 
-`requires` remains for objective-id prerequisites. `next_objectives` is for
-choosing among already-authored next objectives after this objective completes.
-Do not show these branches in a choice menu unless the player is intentionally
+Do not duplicate these destination edges in `requires`. Do not show
+deterministic branches in a choice menu unless the player is intentionally
 choosing between them.
 
 ### AI-adjudicated hidden-outcome objectives
@@ -3676,47 +3986,56 @@ Example pair:
     "title": "Take Part in the War Council",
     "type": "story",
     "status": "active",
-    "selectable": true,
     "summary": "Discuss the coming battle with the four heroes for as long as you need.",
     "completion_control": "player",
     "completion_criteria": "Complete only when the council has clearly ended because the player leaves or concludes it, the heroes dismiss or expel the player, or an interruption definitively ends the meeting. Do not complete merely because the planned strategy topics were discussed or enough evidence exists to judge the player. During the active meeting, let the heroes naturally raise the authored strategic disagreements and react to the player's opinions.",
-    "completion_instruction": "End the council without revealing hidden route labels, then proceed directly to private adjudication.",
-    "rewards": []
+    "next_objectives": [
+      {
+        "id": "attend-war-council-output",
+        "objective_id": "judge-war-council",
+        "target_input_group_id": "judge-war-council-input-1",
+        "completion_instruction": "End the council without revealing hidden route labels, then proceed directly to private adjudication.",
+        "requirements": [],
+        "rewards": []
+      }
+    ]
   },
   {
     "id": "judge-war-council",
     "title": "Resolve the War Council",
     "type": "story",
     "status": "hidden",
-    "selectable": false,
-    "requires": ["attend-war-council"],
     "completion_control": "ai",
     "evaluate_ai_on_activation": true,
     "completion_criteria": "The preceding war council has already ended. Complete immediately and judge the player's conduct, opinions, known facts, and current relationships from that completed interaction.",
-    "completion_instruction": "Apply the selected private result without replaying or extending the council.",
     "route_control": "ai",
-    "rewards": [],
     "outcome_routes": [
       {
         "id": "earned-hero-trust",
         "criteria": "The player listened, contributed useful judgment, and treated the heroes as respected partners.",
         "requirements": [],
+        "completion_instruction": "Apply the trusted result without replaying or extending the council.",
         "rewards": [],
-        "next_objective_id": "prepare-trusted-plan"
+        "next_objective_id": "prepare-trusted-plan",
+        "target_input_group_id": "prepare-trusted-plan-input-1"
       },
       {
         "id": "strained-hero-alliance",
         "criteria": "The player remained involved but damaged cooperation through dismissal, hostility, manipulation, or reckless judgment.",
         "requirements": [],
+        "completion_instruction": "Apply the strained result without replaying or extending the council.",
         "rewards": [],
-        "next_objective_id": "prepare-strained-plan"
+        "next_objective_id": "prepare-strained-plan",
+        "target_input_group_id": "prepare-strained-plan-input-1"
       },
       {
         "id": "uncertain-hero-alliance",
         "criteria": "The interaction ended without strong evidence for a more specific relationship outcome.",
         "requirements": [],
+        "completion_instruction": "Apply the uncertain result without replaying or extending the council.",
         "rewards": [],
         "next_objective_id": "prepare-cautious-plan",
+        "target_input_group_id": "prepare-cautious-plan-input-1",
         "fallback": true
       }
     ]
@@ -3739,7 +4058,7 @@ The lifecycle is fixed:
    scene, recent player behavior, narration, and relevant structured state.
 4. The runtime applies the objective's base rewards once, applies the selected
    route's rewards once, records the selected route privately, and activates
-   that route's next objective or terminal result.
+   that route's next objective.
 
 Author the objective in this shape:
 
@@ -3749,29 +4068,34 @@ Author the objective in this shape:
   "title": "Resolve the Treatment",
   "completion_control": "ai",
   "completion_criteria": "The injury and treatment interaction has reached a clear resolution.",
-  "completion_instruction": "Resolve the immediate treatment without describing hidden relationship labels.",
   "route_control": "ai",
   "outcome_routes": [
     {
       "id": "showed-concern",
       "criteria": "The player sincerely noticed or considered the pain Mara experiences while healing them.",
       "requirements": [],
+      "completion_instruction": "Resolve the concerned result without describing hidden relationship labels.",
       "rewards": [],
-      "next_objective_id": "mara-softens"
+      "next_objective_id": "mara-softens",
+      "target_input_group_id": "mara-softens-input-1"
     },
     {
       "id": "used-without-consideration",
       "criteria": "The player treated Mara's pain as irrelevant or treated her only as a reusable tool.",
       "requirements": [],
+      "completion_instruction": "Resolve the inconsiderate result without describing hidden relationship labels.",
       "rewards": [],
-      "next_objective_id": "mara-withdraws"
+      "next_objective_id": "mara-withdraws",
+      "target_input_group_id": "mara-withdraws-input-1"
     },
     {
       "id": "accepted-assistance",
       "criteria": "The player accepted help pragmatically without meaningful concern or cruelty.",
       "requirements": [],
+      "completion_instruction": "Resolve the neutral result without describing hidden relationship labels.",
       "rewards": [],
       "next_objective_id": "mara-neutral",
+      "target_input_group_id": "mara-neutral-input-1",
       "fallback": true
     }
   ]
@@ -3789,10 +4113,10 @@ route truly possible or impossible:
 ```json
 { "path": "story_inventory.adventurer_rank", "op": ">=", "value": 2 }
 { "type": "story_rule", "id": "mara-is-bound-by-first-law" }
-{ "type": "known_fact", "target": "Mara Venn", "id": "mara-trusts-player" }
-{ "type": "party_member", "character": "Mara Venn" }
-{ "type": "character_alive", "character": "Mara Venn" }
-{ "type": "character_dead", "character": "Bandit Captain" }
+{ "type": "known_fact", "target": "mara-venn", "id": "mara-trusts-player" }
+{ "type": "party_member", "target": "mara-venn" }
+{ "type": "character_alive", "target": "mara-venn" }
+{ "type": "character_dead", "target": "bandit-captain" }
 { "type": "currency", "id": "coins", "op": ">=", "value": 120 }
 ```
 
@@ -3825,25 +4149,52 @@ Rules:
 - Outcome ids, criteria, requirements, route labels, and unchosen outcomes are
   private. Never expose them in objective titles, summaries, choice menus,
   narration, completion messages, hints, or visible reward descriptions.
-- Each route must have a unique stable `id`, a non-empty `criteria`, a `rewards`
-  array (empty is valid), and either an existing `next_objective_id` or
-  `terminal: true`.
+- Each route must have a unique stable `id`, a non-empty `criteria` unless it is
+  the fallback, a `completion_instruction`, a `rewards` array (empty is valid),
+  and an existing `next_objective_id` plus `target_input_group_id`.
 - Do not combine `outcome_routes` with ordinary `next_objectives` on the same
   objective. Do not prefill runtime fields such as `selected_outcome_id`.
-- Use `terminal: true` only when that specific route intentionally has no next
-  objective. Failure is not automatically terminal; prefer fail-forward routes
-  when the story can continue coherently.
+- Route an ending outcome to an explicit Finale node. Do not terminate from an
+  individual Branch output.
 
 ## Validation
 
 - `id` values are unique.
-- Every `requires` id exists.
-- Every `next_objectives[].objective_id` exists. Every conditional entry has
-  structured requirements, and any needed default path is last.
+- Exactly one main objective is the story start. It is active; other unreached
+  objectives are hidden.
+- No clean objective authors legacy `requires`.
+- Every nonterminal output across `next_objectives`, `choices`, and
+  `outcome_routes` has a unique stable id, an existing destination, a valid
+  `target_input_group_id`, a completion instruction, and a rewards array.
+- Every non-starting main objective has at least one reachable incoming group.
+  No group is empty or contains duplicate/missing output transitions.
+- OR exists between input groups and AND exists inside a group. A transition is
+  assigned to exactly one destination group.
+- Every Completion Requirement and Output Requirement is structured, references
+  existing data, and contains no circular objective-completion dependency.
+- Player Choice has at least one option, valid visible option text, a supported
+  response mode, and at least one continuation option with no requirements
+  unless every outcome is intentionally unavailable/final.
+- Player Choice with no output is rejected.
+- Deterministic Branch outputs are priority ordered. Non-fallback outputs have
+  requirements and the unrestricted fallback, when used, is last.
 - Every AI outcome route has a unique id, private criteria, deterministic reward
-  objects, and an existing `next_objective_id` or `terminal: true`. Exactly one
+  objects, and an existing `next_objective_id` plus
+  `target_input_group_id`. Exactly one
   route is the no-requirements fallback/default. AI-routed objectives do not
   also use `next_objectives`.
+- Player Action, AI Scene, and Immediate AI use one simple completion
+  condition. Player Choice and Automatic Transition omit it.
+- Immediate AI uses `completion_control: "ai"` and
+  `evaluate_ai_on_activation: true`. Automatic Transition uses
+  `completion_control: "reward_only"` and `requirement_check_only: true`.
+- Automatic Transition contains no choice options, dialogue, AI route
+  criteria, or completion condition.
+- Every bounded-resource cost output has a matching eligibility requirement.
+- Every main Finale specifies freeplay, ending, or game over and has a
+  non-empty ending message. Side Finales do not end the main story.
+- Cycles are intentional, reachable from outside the cycle, and cannot loop
+  forever through unconditional Automatic Transitions.
 - Relationship/conversation-based hidden routing normally uses the two-objective
   player-paced-scene then hidden-adjudication pattern. Verify that the visible
   objective cannot complete merely because the conversation is proceeding or
@@ -3864,8 +4215,8 @@ Rules:
 - Check every objective for creator/process language masquerading as gameplay.
 - Reject any objective whose `completion_criteria` is only the title repeated
   in a sentence.
-- Reject any objective whose `completion_instruction` is only the title repeated
-  in a sentence.
+- Reject any output whose `completion_instruction` is only the objective title
+  repeated in a sentence.
 - Reject any AI-controlled objective whose criteria says `player completes`.
 - Forced branch choices use one `completion_control: "choice"` owner objective
   with a `choices[]` array. Each option has branch-specific rewards or story
@@ -4118,9 +4469,9 @@ verbatim copy of Codex process instructions.
   `editor_data.story_tree.viewport` with `{ "x": 0, "y": 0, "zoom": 1 }`.
   Use this only to help the manual visual Story Builder open with a readable
   layout. Never store lore, hidden plot, creator notes, objective instructions,
-  or AI guidance here. The visual editor derives links from normal objective
-  fields: `requires`, `next_objectives`, `choices`, `exclusive_group`, and
-  `rewards`.
+  or AI guidance here. The visual editor derives links from output destinations
+  and `target_input_group_id` values in `next_objectives`, `choices`, and
+  `outcome_routes`.
 
 ## state.meta
 
@@ -4633,7 +4984,7 @@ and the story intentionally requires Character Library selection.
 
 - Future-cast notes, personality summaries, and full-character facts must not
   contain scheduling/process instructions such as `Should not appear before X`
-  or `Introduce only after Y`. Put timing in `requires`, objective rewards,
+  or `Introduce only after Y`. Put timing in graph inputs, objective rewards,
   `meet_condition`, `join_condition`, or hidden future-cast notes, not in
   character `known_facts`/`starting_known_facts`.
 
@@ -4715,9 +5066,8 @@ and the story intentionally requires Character Library selection.
 
 - Objective `title`: Player-facing objective title. Do not name locked future characters or role spoilers before they are introduced.
 
-- Objective `type`: `"story"`, `"side"`, or `"dialogue"`. `"dialogue"`
-  is a main/story objective that requires non-empty `dialogue_lines`; it is not
-  a `completion_control` value.
+- Objective `type`: `"story"` or `"side"`. Dialogue is configured on outputs;
+  do not use `"dialogue"` as a separate objective type in clean new stories.
 
 - Objective `kind`: Do not author this redundant editor field in clean normal
   story JSON. Use `type: "story"` or `type: "side"`; the visual editor may derive
@@ -4727,9 +5077,35 @@ and the story intentionally requires Character Library selection.
 
 - Objective `summary`: Player-facing objective text shown in UI. There is no separate `objective` field.
 
-- Objective `rewards`: Array of reward objects or reward bundle references. Current reward examples include future-cast introduction, future-cast promotion to party, shared bundle references, and supported travel/location reveal behavior. Future-character rewards must use `character_id` equal to an existing `future_cast.items` object key. Do not use old reward bucket objects such as `rewards.unlock_locations`, `rewards.introduce_future_characters`, or `rewards.story_rules`; convert each bucket entry into a normal reward object. Do not use XP, level, rank, or progression-skill rewards while the progression system is shelved. Rewards should be hidden from ordinary narrator prompts unless reward handling needs them.
+- Objective `while_active_guidance`: Optional hidden AI-only text used while the
+  objective is active. Keep `summary` fully player-facing and put private
+  pacing, behavior, secrecy, or scene-direction guidance here. Omit when blank.
 
-Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+- Objective `completion_requirements`: Optional array of structured
+  requirements that must all remain true before a reached objective can
+  progress. Unmet requirements keep a visible objective unavailable and
+  prevent completion checks, routing, and rewards.
+
+- Output `rewards`: Array of reward objects, bundle references, or template
+  invocations on each `next_objectives`, `choices`, or `outcome_routes` entry.
+  A Finale may use objective-level rewards because it has no output. Future
+  character rewards must use `character_id` equal to an existing
+  `future_cast.items` object key. Do not use old reward bucket objects such as
+  `rewards.unlock_locations`, `rewards.introduce_future_characters`, or
+  `rewards.story_rules`. Do not use XP, level, rank, or progression-skill
+  rewards while progression is shelved.
+
+Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `delete_outfit`, `delete_all_outfits`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `delete_outfit` and `delete_all_outfits` only for permanent runtime wardrobe removal, never to rewrite reusable character-definition outfit fields. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+
+Objective definitions under `state.objectives` are immutable during play.
+Never target `objectives` or `state.objectives` with `set_state_field`,
+`modify_integer`, `modify_number`, `add_state_list_item`,
+`remove_state_list_item`, character-shop effects, or any equivalent state-path
+reward. This rule applies recursively to normal objective rewards, choice and
+outcome-route rewards, reward bundles, reward templates, shops, timed events,
+and story-pacing events. Use `start_objective` and `complete_objective` with
+stable ids of already-authored objectives for runtime objective transitions.
+Story import and public upload reject authored objective-state mutations.
 
 `introduce_future_character` must include `npc_location_id`, pointing to an
 existing stable `state.npc_directory.locations` key. It may include
@@ -4737,18 +5113,45 @@ existing stable `state.npc_directory.locations` key. It may include
 Do not use the old `npc_location`, `location_hint`, or a player-facing location
 name as an NPC directory key.
 
-- Objective `requires`: Array of prerequisite objective ids. Use at least one example in templates where appropriate. Do not use step fields.
+- Objective `requires`: Do not author this legacy prerequisite array in clean
+  new stories. Graph inputs are derived from incoming output transitions.
 
 - Objective `next_objectives`: Optional ordered array on the objective that just
-  completed. Use this when completing the current objective should
-  automatically choose one next objective based on story state instead of
-  showing a player choice menu. Each entry may be a string objective id or an
-  object with `objective_id` and optional structured `requirements`. Entries
-  are evaluated in order; the first entry whose requirements are met becomes
-  the next active/focused objective. Put an unconditional/default entry last
-  when the story needs a fallback. `requires` is still for prerequisite
-  objective ids; `next_objectives` is only for after-completion routing among
-  already-authored objectives.
+  completed. Use it for deterministic Linear/Branch outputs on Player Action
+  and Automatic Transition families, plus Linear AI outputs. Every entry is an
+  object with a unique stable `id`, destination `objective_id`,
+  `target_input_group_id`, `completion_instruction`, optional
+  `dialogue_lines`, `requirements`, `rewards`, and optional
+  `travel_location_id`. Deterministic Branch entries are checked in displayed
+  order; the first eligible output is used. Put one unrestricted
+  `fallback: true` output last when fallback behavior is needed.
+
+- Output `target_input_group_id`: Stable generated group id on every
+  nonterminal output. At the destination, incoming transitions sharing one
+  group id are AND requirements; different group ids are OR alternatives.
+  Track the specific selected output transition, not merely completion of its
+  source objective.
+
+- Output `requirements`: Optional structured eligibility requirements for that
+  result only. Player-facing output requirements remain visible. AI route
+  requirements are private. A reward that spends a bounded resource must have
+  a matching output requirement proving sufficient quantity.
+
+- Output `completion_instruction`: Required authored narrator guidance for that
+  result. It describes the immediate outcome, consequence, reveal, transition,
+  or travel arrival. Do not put future objectives, route ids, or implementation
+  instructions into it.
+
+- Objective `terminal_mode`: Present only on a Finale. A main Finale uses
+  `"freeplay"`, `"ending"`, or `"game_over"` and has a non-empty
+  `ending_message`. `freeplay` closes the authored main route while leaving play
+  enabled; `ending` finishes the adventure; `game_over` finishes it as an
+  irreversible failure. A side Finale ends only its side route and does not end
+  the adventure.
+
+- Objective `end_state`: Serialize the same main Finale value expected by the
+  runtime when the editor writes it. Do not invent a second meaning that
+  conflicts with `terminal_mode`.
 
 - Objective `route_control`: `"ai"` only when hidden consequences must be
   classified from natural scene context. Omit or use `""` for normal routing.
@@ -4756,22 +5159,26 @@ name as an NPC directory key.
 - Objective `outcome_routes`: Hidden array used only with
   `route_control: "ai"`. Each route has a unique stable `id`, private
   `criteria`, optional structured `requirements` used as hard eligibility
-  filters, deterministic `rewards`, and `next_objective_id`.
+  filters, `completion_instruction`, deterministic `rewards`,
+  `next_objective_id`, and `target_input_group_id`.
   Exactly one route has `fallback: true` or `default: true`, and that route
-  must have no requirements. A route may omit its next objective only when it
-  declares `terminal: true`. The runtime records
+  must have no requirements. Route ending outcomes through explicit Finale
+  nodes. The runtime records
   `selected_outcome_id` privately and applies base plus selected-route rewards
   once. Authors must not prefill runtime selection fields.
 
 - Objective `travel_location_id`, `travel_location_name`: Optional travel target metadata.
 
-- Objective `unlock_mode`: Current app field. Usually `"manual"` unless the story intentionally uses another supported mode.
+- Objective `unlock_mode`: Do not author this legacy editor field in new
+  stories. The editor may interpret old `unlock_mode: "auto_complete"` as an
+  Automatic Transition with one all-input group, but clean output uses grouped
+  output transitions plus `requirement_check_only: true`.
 
 - Objective `exclusive_group`: String. Use `""` when not needed. Use a stable
   branch id on the visible owner objective for a mutually exclusive choice
   cluster. Do not put each option in the objective list. Later objectives in a
-  branch should usually leave this blank and instead `requires` the owner
-  objective while using selected-choice story rules/state changes for gating.
+  branch should usually leave this blank and use their incoming output
+  transitions plus selected-choice story rules/state changes for gating.
 
 - Objective `selectable`: Boolean. Whether the player can manually select this objective.
 
@@ -4792,13 +5199,13 @@ name as an NPC directory key.
 - Objective `notes`: Array of objective notes. Keep internal/AI notes out of player-facing fields.
 
 - Objective `choices`: Array used only when `completion_control` is `"choice"`.
-  Each choice item should have `id`, `title`, `summary`, `rewards`, and
-  optional `effects` and `requirements`. These are the options shown in the forced choice UI; they
-  are not top-level objectives and should not appear in the normal objective
-  list. For major branch choices, use player-facing `summary` only for
-  non-spoilery clarification of what the option means in the current scene, and
-  keep `effects` empty unless they only show visible requirements, visible
-  costs, or story-inventory changes.
+  Each choice output has a stable `id`, visible `title`, optional `summary`,
+  destination `next_objective_id`, `target_input_group_id`,
+  `completion_instruction`, optional `dialogue_lines`, `rewards`,
+  `requirements`, and optional `effects`. These are options shown in the forced
+  choice UI, not top-level objectives. Use player-facing `summary` only for
+  non-spoilery clarification. Keep `effects` empty unless they show visible
+  requirements, costs, or story-inventory changes.
   Do not reveal hidden outcomes such as death, failure, sale, romance,
   betrayal, ending, route labels, unlock labels, hidden recommendations, or
   unchosen branch consequences in the choice UI. Bad visible `effects` examples
@@ -4813,27 +5220,47 @@ name as an NPC directory key.
   provide at least one selectable continuation option with no requirements that
   keeps the story moving.
 
+- Objective `choice_response_mode`: `"optional_text"` lets the player select an
+  option and optionally type additional text. `"exact_text"` requires
+  non-empty `player_text` on every choice output and sends that exact authored
+  player dialogue. Use exact text for a precise spoken line; use optional text
+  when the player should retain control over wording.
+
 - Objective `completion_message`: Optional completion message string. Use `""` if not needed.
 
-- Objective `dialogue_lines`: Required only when `type` is `"dialogue"`.
-  Non-empty ordered array of exact character dialogue lines. Each line uses a
-  parenthesized speaker tag and quoted dialogue, for example
+- Output `dialogue_lines`: Optional non-empty ordered array of exact character
+  dialogue lines on a `next_objectives`, `choices`, or `outcome_routes` entry.
+  Each line uses a parenthesized speaker tag and quoted dialogue, for example
   `(|[character:mentor-id]|) "Exact line."`. The narrator must include every
-  line exactly once in that order after the objective completes. The normal
-  `completion_instruction` remains the only completion-instruction field and
-  directs the whole response, not only text after the dialogue lines.
+  line exactly once in order when that output resolves. The same output's
+  `completion_instruction` directs the whole response.
 
-- Objective `completion_control`: `"player"`, `"ai"`, `"choice"`, or `"reward_only"`. `"player"` means the verifier checks one selected player-action objective after a player-authored turn and can record progress without completing. Standard `"ai"` objectives are checked before the normal narrator reply and then receive post-reply progress checks; use them for visible outcomes that still need play to establish. `"choice"` means EmberAdventures presents this objective as a forced choice menu, completes the owner objective immediately when the player selects one option from `choices[]`, and applies that option's rewards without AI verification. `"reward_only"` means the objective is hidden infrastructure: when it becomes available, EmberAdventures immediately completes it, applies its rewards, and advances to `next_objectives` or dependent objectives without asking the player or AI.
+- Objective `completion_control`: `"player"` creates a Player Action family;
+  `"ai"` creates an AI Scene family; `"choice"` creates a Player Choice family;
+  and `"reward_only"` is valid only with `requirement_check_only: true` for an
+  Automatic Transition family. Use the Objective Behavior Names table rather
+  than treating these storage values as unrelated schemas.
 
-- Objective `evaluate_ai_on_activation`: Optional boolean, default `false`, valid only with `completion_control: "ai"`. When `true`, EmberAdventures evaluates the hidden objective once as soon as it becomes active, using only established state and recent messages. Use it for a private post-scene assessment or hidden route that has no visible narration of its own. Do not use it for combat, travel, a reveal, a scene that needs another reply, or any objective whose outcome must be shown to the player.
+- Objective `evaluate_ai_on_activation`: Optional `true` only with
+  `completion_control: "ai"`. It converts an AI Scene family into Immediate AI:
+  one AI completion decision runs when the activation is reached. A no answer
+  is remembered for that activation, leaves the objective available, and does
+  not prevent normal later AI completion checks.
 
-Reward-only objective rules:
+- Objective `requirement_check_only`: Optional `true` only with
+  `completion_control: "reward_only"`. It creates an Automatic Transition
+  family, omits `completion_criteria`, makes no AI call, and resolves only from
+  graph reachability plus structured `completion_requirements`.
 
-- Use `completion_control: "reward_only"` only for hidden deterministic transition nodes.
-- A reward-only objective must have at least one reward or reward bundle reference.
-- A reward-only objective must have `next_objectives`, `outcome_routes`, or at least one dependent objective that requires it.
-- Do not make reward-only objectives visible story goals. They are graph tools.
-- Do not use reward-only objectives to deduplicate repeated rewards; use `state.reward_bundles` for fixed rewards or `state.reward_templates` for parameterized behavior.
+Automatic Transition rules:
+
+- Keep it hidden from the normal objective list; it is graph infrastructure.
+- It may apply rewards, travel, or no state change at all before routing.
+- It must have a valid output or explicit terminal behavior.
+- It cannot contain player choices, dialogue, AI route criteria, or a
+  completion condition.
+- Do not use it to deduplicate repeated rewards; use `state.reward_bundles` or
+  typed `state.reward_templates`.
 
 ## state.reward_bundles
 
@@ -4912,12 +5339,11 @@ duplicate reward definitions; reward-only nodes shape the graph.
   prose or the AI to freely edit them. Choice UI may show concrete visible
   resource requirements/effects such as `credits +500` or `credits >= 1200`.
 
-- Objective route integrity: Every non-terminal main objective must have a
-  planned route forward through a dependent objective with `requires` or through
-  `next_objectives` or `outcome_routes`. A main objective with no dependent route,
-  `next_objectives`, or `outcome_routes` must be an explicit terminal ending/death objective with
-  deterministic ending rewards. Do not rely on EmberAdventures's fallback objective
-  picker as normal story flow.
+- Objective route integrity: Every non-Finale main objective must have a planned
+  route forward through `next_objectives`, `choices`, or `outcome_routes`, and
+  every output has a valid destination/input group. A main objective with no
+  output must explicitly continue in freeplay, end the adventure, or cause game
+  over. Do not rely on fallback objective picking as normal story flow.
 
 - `story_shops`: Optional hidden object for story shops and job boards. Keys are
   stable shop ids. Each shop has `id`, `title`, internal `type`
@@ -4991,23 +5417,32 @@ duplicate reward definitions; reward-only nodes shape the graph.
   Supported operators are `>=`, `>`, `<=`, `<`, `==`, `!=`, `truthy`, `falsy`,
   `includes`, and `not_includes`. For common story conditions, prefer explicit
   typed requirements instead of fragile path/list checks:
+  `{ "type": "objective_complete", "id": "objective-id" }`,
   `{ "type": "story_rule", "id": "rule-id" }`,
-  `{ "type": "known_fact", "target": "Character Name", "id": "fact-id" }`,
-  `{ "type": "party_member", "character": "Character Name" }`,
-  `{ "type": "character_alive", "character": "Character Name" }`,
-  `{ "type": "character_dead", "character": "Character Name" }`, and
+  `{ "type": "known_fact", "target": "stable-character-id", "id": "fact-id" }`,
+  `{ "type": "party_member", "target": "stable-character-id" }`,
+  `{ "type": "character_alive", "target": "stable-character-id" }`,
+  `{ "type": "character_dead", "target": "stable-character-id" }`, and
   `{ "type": "currency", "id": "coins", "op": ">=", "value": 120 }`.
   Use direct path requirements for concrete `story_inventory`, `world_flags`,
   player, character, NPC, or map fields when a typed shortcut does not exist.
+  Completion Requirements and player-choice/deterministic Output Requirements
+  are player-visible, so their human-readable descriptions must not reveal
+  spoilers. Only AI `outcome_routes` criteria and requirements are private.
   For numeric resource rewards or costs, use `adjust_story_inventory` with a
   positive or negative delta. Do not use `set_state_field` on
   `story_inventory.coins`, `story_inventory.credits`, XP, rank progress,
   reputation, suspicion, or parts unless the story intentionally needs an exact
   absolute assignment.
 
-- Objective `completion_criteria`: Verifier-only criteria. The verifier returns exactly `yes` or `no`.
+- Objective `completion_criteria`: One verifier-only condition. The verifier
+  returns exactly `yes` or `no`. Required for Player Action, AI Scene, and
+  Immediate AI; omitted for Player Choice and Automatic Transition.
 
-- Objective `completion_instruction`: Narrator-only instruction used after the verifier completes the objective. Use it to bridge consequences and introduce predefined future-cast characters when appropriate. Do not use it to decide player choices.
+- Output `completion_instruction`: Narrator-only instruction used when that
+  output resolves. Use it to show consequences, travel, reveals, and predefined
+  future-cast introductions. Do not use it to decide player choices. A Finale
+  may keep this at objective level because it has no output.
 
   Write this as a direct story instruction for this objective's immediate
   outcome. Do not paste broad boilerplate such as `Show the immediate story
@@ -5017,9 +5452,13 @@ duplicate reward definitions; reward-only nodes shape the graph.
   villagers, and bandits attacking the road.` Bad: `Show the immediate story
   outcome without introducing future hooks unless rewards unlock them.`
 
-- Objective `auto_completed_from_prereqs`: Boolean. Usually false in immutable templates.
+- Objective `auto_completed_from_prereqs`: Runtime-derived compatibility state.
+  Do not author it in immutable templates.
 
-- Forbidden objective fields: Do not use `objective`, `completion`, `steps`, `current_step_id`, `selected_step`, `selected_step_id`, or old step-based fields. The old nested `completion: { type, ... }` shape must be converted into the current flat `completion_control`, `completion_criteria`, and `completion_instruction` fields.
+- Forbidden objective fields: Do not use `objective`, nested `completion`,
+  `steps`, `current_step_id`, `selected_step`, `selected_step_id`, authored
+  `repeatable`, or old step-based fields. Do not author legacy `requires`,
+  `unlock_mode`, or `auto_completed_from_prereqs` in clean new stories.
 
 ## state.world_flags
 
@@ -5424,11 +5863,12 @@ Use this before finalizing a story template.
   for choice-heavy/multiple-ending stories, or linear/mostly-linear for focused
   stories where fake menu choices would hurt pacing.
 - Objectives map cleanly to milestones.
-- Every objective has story-specific `completion_criteria`; none use generic
+- Every Player Action, AI Scene, and Immediate AI objective has story-specific
+  `completion_criteria`; none use generic
   title-repeat boilerplate such as `Return yes only when the player completes:
   {title}`, `Return yes only when the player completes or survives...`, or
   `Return yes only when the player clearly takes action toward this goal...`.
-- Every objective has story-specific `completion_instruction`; none use generic
+- Every output has a story-specific `completion_instruction`; none use generic
   title-repeat boilerplate such as `Resolve the immediate outcome of {title}
   and move to the next objective`.
 - Every objective with a `summary` field has a non-empty, story-specific,
@@ -5467,8 +5907,8 @@ Use this before finalizing a story template.
   not only through narrator prose.
 - Truly mutually exclusive branches have branch-specific rewards,
   `exclusive_group` on the visible choice owner objective, and branch
-  descendants gated with `requires`; they do not collapse back into the same
-  state.
+  descendants reached only through their selected output transitions; they do
+  not collapse back into the same state.
 - Optional branches, parallel goals, and side content that can all be completed
   do not use `exclusive_group`.
 - Immediate-merge choices record consequences in rewards before returning to a
@@ -5485,9 +5925,10 @@ Use this before finalizing a story template.
   There are zero repeated reward definitions across the objective tree. Inline
   rewards are used only for effects unique to one objective, route, choice, or
   event.
-- Hidden `completion_control: "reward_only"` nodes are used only when the graph
-  needs an explicit shared transition/convergence point. They have rewards,
-  have a valid route forward, and are not used as visible player objectives.
+- Automatic Transitions are used only when the graph needs deterministic
+  convergence, bookkeeping, state-based routing, or automatic rewards. They
+  have a valid output or terminal behavior and are not visible player
+  objectives.
 - Relationship-threshold choices show locked options and visible requirements;
   options are not hidden or rewritten based on secret thresholds.
 - Resource-gated routes show visible requirements for resources, reputation, or
@@ -5567,8 +6008,9 @@ For every serious story, explicitly consider these features before finalizing:
   control instead of the AI freely changing.
 - `state.reward_bundles` or typed `state.reward_templates` for shared deterministic rewards that would otherwise
   be repeated in more than one branch, route, choice, or event.
-- `completion_control: "reward_only"` for hidden graph transition nodes that
-  apply rewards and advance immediately when reached.
+- Automatic Transitions (`completion_control: "reward_only"` plus
+  `requirement_check_only: true`) for hidden deterministic graph nodes that
+  route without an AI call.
 - `add_state_list_item` and `remove_state_list_item` for scene/list changes.
 - `kill_character` for deterministic death outcomes, with `can_die` respected
   unless an objective intentionally overrides it.
