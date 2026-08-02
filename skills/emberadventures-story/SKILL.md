@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.41`.
+Current skill version: `1.0.45`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -583,11 +583,13 @@ with rollback and choice support.
     interests flirt, invite, tempt, court, or come onto the player while
     preserving explicit player choice.
     Make the non-player cast gender-flexible by default. Mark intended romantic
-    interests `romanceable: true`, use the 40% male / 40% female / 20% futanari
-    canonical distribution as the default across those characters, and provide
-    complete opposite male/non-male fallback names and outfits. The runtime
-    performs preference adaptation; the authored personality, appearance, role,
-    plot function, and relationship arc must remain coherent in every gender.
+    interests `romanceable: true` and provide complete opposite male/non-male
+    fallback names and outfits. Ask whether the creator wants the optional 40%
+    male / 40% female / 20% futanari default-presentation balance and explain
+    that it changes only the cast's authored default presentations, not their
+    identities, bodies, personalities, roles, plot functions, or relationship
+    arcs. It is valid to retain the creator's intended default genders instead.
+    The runtime performs preference adaptation either way.
 22. Run the publish-as-is pass: assume the user will import or publish the
     generated file immediately with no manual cherry-picking, no comparison
     against another draft, and no review from another thread/model. If two
@@ -929,8 +931,9 @@ through the UI, objective choices, or deterministic rewards.
 `adventurer_xp`, `adventurer_rank`, repair parts, suspicion, reputation, and
 items. Use it for resources that should not be freely granted by narrator prose.
 Items may include `id`, `name`, `type`, `quantity`, `value`, `sellable`,
-`quest_item`, `description`, `image_prompt`, and `image_id`. Quest items should
-normally be non-sellable.
+`quest_item`, `description`, and the portable nested `image` slot documented in
+Story Image Rules. This applies to starting story-inventory items, general-shop
+items, and job reward items. Quest items should normally be non-sellable.
 
 `story_shops` is an object keyed by shop id. A shop has `id`, `title`, internal
 `type` (`"character"`, `"job"`, `"general"`, or `"clothing"`), display-only `subtype`, optional
@@ -945,8 +948,10 @@ Shop`, `Companion Shop`, `Mercenary Guild`, `General Store`, `Outfitter`, or
 
 Character-shop items should be minimal and reference `future_cast.items` by
 `character_id`; do not duplicate full character definitions inside shop items.
-Use `price`, `purchased`, `locked`, structured `requirements`, and optional
-`unlock_reason` and `on_purchase_objective`. `purchase_story`,
+Use `price`, `locked`, structured `requirements`, and optional
+`unlock_reason` and `on_purchase_objective`. `purchased`, `purchase_count`, and
+`removed` are runtime fields; do not author them as starting story state.
+`purchase_story`,
 `purchase_objective`, and `purchase_story_objective` are accepted aliases, but
 `on_purchase_objective` is the normalized stored field. When the character is
 purchased, EmberAdventures starts that objective and selects it unless a locked
@@ -964,9 +969,64 @@ EmberAdventures never guesses either word from the shop title, subtype, or other
 prose. It may set `post_purchase_presence` to
 `"current_scene"` (the default) or `"roster"`; use `"roster"` only when the
 character should be owned but should not physically enter the current scene.
+
+Character shops support two purchase behaviors through `purchase_mode`:
+
+- `"acquire"` is the default. It is one-time, adds the character to the owned
+  roster, marks the future-cast entry joined, and uses
+  `post_purchase_presence`.
+- `"service"` charges the price while keeping the character as an NPC. Set
+  `repeatable: true` for bookings that may be purchased repeatedly. Each
+  successful purchase increments runtime `purchase_count`, places the character
+  in the current scene as an NPC, and starts `on_purchase_objective` when that
+  objective has not already completed. It never adds the character to
+  `state.characters`, the party roster, or party scene presence.
+
+Set `purchase_mode` and `repeatable` on the shop when all listings share the
+behavior, or override either field on an individual item. Never make an
+`"acquire"` listing repeatable. A service character can later be recruited only
+through an explicit objective reward such as
+`promote_future_character_to_party`; paying for a service never implies
+recruitment.
+
+To remove a character from a shop when a story event makes the listing
+unavailable, use this objective reward:
+
+```json
+{
+  "type": "remove_character_shop_listing",
+  "shop_id": "stable-character-shop-id",
+  "character_id": "stable-future-character-id"
+}
+```
+
+The reward is idempotent. It hides that exact listing and blocks later
+purchases without deleting the character, NPC record, relationship, or
+objective state.
+
 The shop owner and purchasable/talkable characters must be real full
 character/NPC definitions in `future_cast`, not labels like `shopkeeper` or
-`worried baker`.
+`worried baker`. Apply the same rule to story shops, job boards, slave markets,
+companion shops, auctions, guild counters, and generated-job role pools. Owners,
+clients, witnesses, rivals, purchasable characters, and other talkable people
+need proper names, roles, personalities, speech styles, outfits, appearances,
+and durable facts. Reference those definitions from `future_cast` and NPC
+placement; never duplicate full character data inside shop or job records.
+
+Scale depth to importance rather than reducing people to placeholders:
+
+- major or fixed companions and important owners usually need 6-10 concrete
+  durable facts;
+- ordinary purchasable or talkable stock characters usually need 3-5 concrete
+  durable facts plus a specific role, species or race, appearance, outfit,
+  personality, speech style, intended stock placement, any known unlock
+  requirement, and a post-purchase or post-introduction hook;
+- generated job-role NPCs may be shorter, but still need a proper name, concrete
+  appearance, outfit, personality, speech style, and one reusable scene hook.
+
+Large stock pools should not make hundreds of entries main-character length,
+but every entry must remain distinct enough to inspect, talk to, acquire or
+recruit when applicable, remember, and use in scenes.
 
 When a character shop has a story-specific secondary cost or state effect whose
 magnitude comes from each purchasable character, define that behavior once in
@@ -1370,9 +1430,11 @@ Design each node in this order:
 6. Add structured Completion Requirements only for resources, state, or other
    completed objectives that must remain true before this reached objective can
    progress.
-7. Write one player-facing title, one useful summary, optional hidden
+7. Write one player-facing title, one useful summary, required non-empty hidden
    `while_active_guidance`, and exactly one simple completion condition unless
-   the objective is Player Choice or Automatic Transition.
+   the objective is Player Choice or Automatic Transition. Automatic
+   Transitions still require `while_active_guidance` even though they make no AI
+   call; use it to document the intended active behavior of the transition.
 8. Configure each output's completion instruction, optional exact dialogue,
    rewards or reusable reward references, optional travel destination,
    eligibility requirements, and next node.
@@ -1667,8 +1729,9 @@ relationship, location, or other state requirements into graph inputs.
 - Use `generate_story_image` for authored non-character images that strengthen
   the story: important objects, locked doors, clues, symbols, maps, memory
   objects, locations, horror reveals, jump scares, ritual scenes, and other
-  one-time visual beats. Include a stable `id`, exact `prompt`, and optional
-  `negative_prompt`. This is not a title-card image and does not need a
+  one-time visual beats. Include a stable `id`. Supply either an exact prompt
+  for runtime generation or a nested hosted `image` slot to reveal existing
+  art without generation. This is not a title-card image and does not need a
   character target.
 - Use `story_rules` as runtime law, not lore notes. Good rules are active
   constraints such as locked romance gates, current danger rules, repair
@@ -1710,8 +1773,12 @@ relationship, location, or other state requirements into graph inputs.
 - For characters embedded in a story, build them to serve play. Durable facts
   should include how the character affects objectives, what they can do in
   scenes, what relationship tensions matter, and what future rewards or gates
-  may change about them. Do not put unlock timing or objective scheduling inside
-  character prose.
+  may change about them. Do not put unlock timing, objective requirements,
+  creator instructions, scheduling notes, or other implementation directions
+  inside `starting_known_facts` or other character prose. For example, do not
+  write `She joins after objective 12`; write the durable fictional fact, such
+  as `She wants proof the player can protect the caravan before committing to
+  travel with them`, and implement the actual timing in objectives and rewards.
 - Opening people who are physically present but not party members belong in
   `npc_directory`, not `characters`.
 - Starting templates must not include temporary speaker state. If someone can
@@ -1956,7 +2023,10 @@ Before finishing:
 - Shop/future-cast integrity is valid: every character-shop `character_id`
   exists in `future_cast.items`, every future-cast item id matches its key,
   every `on_purchase_objective` exists or is intentionally pending with a note,
-  every locked shop item has visible requirements or an unlock reason, full
+  every `purchase_mode` is `"acquire"` or `"service"`, only service listings
+  are repeatable, every character appears at most once per shop, every
+  `remove_character_shop_listing` reward resolves to an existing character-shop
+  listing, every locked shop item has visible requirements or an unlock reason, full
   character data is not duplicated inside shop items, and purchasable characters
   are not present in the map/current scene before unlock.
 - Story job-board item schema is consistent: story jobs use `id`, `title`,
@@ -2474,7 +2544,7 @@ Recommended object:
   "type": "story",
   "status": "hidden",
   "summary": "Player-facing context and a useful hint.",
-  "while_active_guidance": "Optional hidden AI guidance while this objective is active.",
+  "while_active_guidance": "Keep the scene focused on the sealed door and do not reveal what is beyond it before the player opens it.",
   "completion_control": "player",
   "completion_criteria": "Return yes when the player opens the sealed door.",
   "completion_requirements": [],
@@ -2926,9 +2996,10 @@ The selected response applies only to the current advance. It is never blanket
 consent for later escalation. Keep refusal routes playable and in character;
 do not punish the player merely for declining intimacy.
 
-For romance-first stories, audit the canonical 40/40/20 distribution and every
-romanceable character's fallback presentation. The runtime may adapt all of
-them to one preferred gender, so no romantic route may depend on the character
+For romance-first stories, audit every romanceable character's fallback
+presentation. If the creator selected the optional authored 40/40/20 balance,
+also audit that distribution. The runtime may adapt the whole romanceable cast
+to one preferred gender, so no romantic route may depend on a character
 remaining their canonical gender.
 
 ## Player-Facing Title And Control Rules
@@ -3219,6 +3290,7 @@ Useful reward types include:
 - `introduce_future_character`
 - `make_future_character_recruitable`
 - `promote_future_character_to_party`
+- `remove_character_shop_listing`
 - `unlock_location`
 - `add_item` / `grant_item`
 - `add_story_item`
@@ -3351,8 +3423,11 @@ precision in `state.numeric_precision`:
 Each map value is the allowed number of decimal places, from 1 through 6. A key
 absent from the appropriate map is an integer. Declare only fields that really
 need decimals. Authored initial values must already fit their declared
-precision. Reusable character-library definitions should keep `stats` integer
-valued because decimal precision belongs to the story that uses those stats.
+precision. A story-embedded character copy may use a decimal stat only when the
+containing story declares that key under
+`state.numeric_precision.character_stats`. Reusable character-library
+definitions keep `stats` integer valued because decimal precision belongs to
+the story that uses those stats.
 
 Use `modify_integer` for deterministic integer arithmetic against existing
 story state or character fields. It supports exactly `add`, `subtract`,
@@ -3786,7 +3861,12 @@ normal image, not a profile image.
 Use `generate_story_image` for authored non-character images: story objects,
 locations, clues, maps, symbols, ritual scenes, horror reveals, jump scares, or
 other one-time visual beats. Keep a stable `id` so EmberAdventures can dedupe and
-debug the image. The reward does not need a character target.
+debug the image. The reward does not need a character target. All three image
+reward types may carry the portable nested `image` slot. When that slot resolves
+to a hosted image, EmberAdventures uses it immediately and does not call the
+image generator. Without a real image reference, profile and solo rewards use
+the target character to generate an image, while story-image rewards require a
+prompt.
 
 Branch consequences:
 
@@ -4185,6 +4265,8 @@ Rules:
   also use `next_objectives`.
 - Player Action, AI Scene, and Immediate AI use one simple completion
   condition. Player Choice and Automatic Transition omit it.
+- Every objective has specific non-empty `while_active_guidance`, including
+  Player Choice and Automatic Transition objectives.
 - Immediate AI uses `completion_control: "ai"` and
   `evaluate_ai_on_activation: true`. Automatic Transition uses
   `completion_control: "reward_only"` and `requirement_check_only: true`.
@@ -4746,6 +4828,19 @@ and the story intentionally requires Character Library selection.
   contacts, antagonists, or characters who should not normally adapt to the
   player's preferred romantic genders. Most recurring characters should be
   romanceable unless their role provides a concrete reason not to be.
+  `romanceable: true` tells runtime preference adaptation to use a presentation
+  allowed by the player profile. The profile's swap-all setting instead adapts
+  every non-player character. Neither setting changes identity, appearance,
+  personality, facts, relationships, role, stats, or inventory: only the active
+  name, profile images, and outfits change. The player character is never
+  adapted by `romanceable` or swap-all.
+
+- Story-embedded character definitions inherit discovery metadata from the
+  story. Omit `genres` and `kink_tags` from `state.player`, every
+  `state.players[]` option, `state.characters`, NPC shells and
+  `full_character` definitions, and every `future_cast.items[id]` shell and
+  `full_character`. Store story genres and kink tags only in their documented
+  top-level and `state.meta` locations.
 
 - Gender-flexible characters keep their canonical `name`, `gender`, `outfits`,
   and `starting_outfit_id`, and require `fallback_name`, nonempty
@@ -4780,16 +4875,34 @@ and the story intentionally requires Character Library selection.
   exhibitionism, and dominant/submissive dynamics are separate traits. Gender
   adaptation never changes any of them.
 
-- Across every romanceable definition in every story container, including the
-  starting party, NPC directory, future cast, shops, heroes, antagonists, and
-  other embedded definitions, use a deterministic base mix of 40% male, 40%
-  female, and 20% futanari. For casts not divisible by five, assign the stable
-  authored order through the repeating sequence `male`, `female`, `male`,
-  `female`, `futanari`; this gives deterministic rounding and the exact 40/40/20
-  ratio for every complete group of five. For generated non-romanceable job
-  characters, use 50% male and 50% female. Runtime adapts romanceable characters
-  to the active player's preferred genders, or all non-player characters when
-  the profile's swap-all setting is enabled. Never adapt the player character.
+- The 40% male / 40% female / 20% futanari balance is an optional authored
+  default-presentation workflow, not a restriction on the story concept. Ask the
+  creator whether to use it and explain the effect before applying it; retaining
+  the creator's intended default genders is valid. This option is especially
+  useful when a cast was first designed as all one gender but should present a
+  varied default roster without changing who the characters are.
+
+- When the creator chooses the balanced workflow, design the cast in its
+  intended genders first, then perform one final presentation-only pass across
+  every romanceable definition in every story container, including the starting
+  party, NPC directory, future cast, shops, heroes, antagonists, and other
+  embedded definitions. Assign stable authored order through the repeating
+  sequence `male`, `female`, `male`, `female`, `futanari`; this gives
+  deterministic rounding and an exact 40/40/20 ratio for each complete group of
+  five. Split futanari `fallback_gender` values as evenly as possible between
+  `male` and `female`, using stable authored order to resolve an odd remainder.
+  For generated non-romanceable job characters, use a deterministic 50% male /
+  50% female default mix. Swapping a default presentation changes only the
+  canonical/fallback name and outfit placement. It must not change appearance,
+  personality, facts, role, stats, relationships, inventory, or any other
+  identity field.
+
+- A standalone character copied or exported from the story retains the
+  creator-intended canonical gender from before any story-cast balancing pass;
+  do not make a story-only default-presentation swap canonical in the standalone
+  library copy. Runtime still adapts romanceable characters to the active
+  player's preferred genders, or all non-player characters when swap-all is
+  enabled, regardless of whether the optional authored balance was used.
 
 - `gender` is the sole source of gender mechanics. `male`, `trans male`, and
   `trans-male` use the male bucket. `futa` and `futanari` identify futanari
@@ -5045,8 +5158,9 @@ and the story intentionally requires Character Library selection.
 
 - Objective prompt visibility is deliberately narrow. Before the active objective
   completes, the narrator and other ordinary turn/verification prompts may receive
-  only that objective's player-facing `title`, `summary`/`description`, and
-  `completion_criteria`. Do not expose `completion_instruction`, `rewards`,
+  only that objective's player-facing `title`, `summary`/`description`,
+  `completion_criteria`, and private `while_active_guidance`. Do not expose
+  `completion_instruction`, `rewards`,
   `next_objectives`, route ids, route criteria, future objective details, or other
   private implementation data before completion. Put information that must be
   unlocked at a specific moment in the completing objective's deterministic
@@ -5077,9 +5191,12 @@ and the story intentionally requires Character Library selection.
 
 - Objective `summary`: Player-facing objective text shown in UI. There is no separate `objective` field.
 
-- Objective `while_active_guidance`: Optional hidden AI-only text used while the
-  objective is active. Keep `summary` fully player-facing and put private
-  pacing, behavior, secrecy, or scene-direction guidance here. Omit when blank.
+- Objective `while_active_guidance`: Required non-empty hidden AI-only text on
+  every objective. Keep `summary` fully player-facing and put private pacing,
+  behavior, secrecy, or scene-direction guidance here. Automatic Transitions
+  require it for a uniform auditable objective definition even though their
+  runtime resolution makes no AI call. Import and public upload reject missing
+  or blank guidance; never omit it or fill it with generic boilerplate.
 
 - Objective `completion_requirements`: Optional array of structured
   requirements that must all remain true before a reached objective can
@@ -5095,7 +5212,11 @@ and the story intentionally requires Character Library selection.
   `rewards.story_rules`. Do not use XP, level, rank, or progression-skill
   rewards while progression is shelved.
 
-Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `delete_outfit`, `delete_all_outfits`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `delete_outfit` and `delete_all_outfits` only for permanent runtime wardrobe removal, never to rewrite reusable character-definition outfit fields. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its shape is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; it does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `delete_outfit`, `delete_all_outfits`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `delete_outfit` and `delete_all_outfits` only for permanent runtime wardrobe removal, never to rewrite reusable character-definition outfit fields. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its generated form is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; its hosted form uses the same reward with `image.url`. It does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+
+`remove_character_shop_listing` is also a supported deterministic reward. It
+requires stable `shop_id` and `character_id` values and hides that exact
+character-shop listing without deleting the character or NPC.
 
 Objective definitions under `state.objectives` are immutable during play.
 Never target `objectives` or `state.objectives` with `set_state_field`,
@@ -5371,6 +5492,15 @@ duplicate reward definitions; reward-only nodes shape the graph.
   second in completed-action text. The game never infers these words. They may
   also define
   `post_purchase_presence` (`"current_scene"` or `"roster"`).
+
+  Character shops and individual listings may define `purchase_mode:
+  "acquire"` or `purchase_mode: "service"`. Acquire is the one-time default and
+  adds the character to the owned roster. Service keeps the character as an NPC;
+  use `repeatable: true` when it may be purchased repeatedly. Service purchases
+  increment runtime `purchase_count`, add the character to current NPC presence,
+  and may start `on_purchase_objective`, but never recruit or add party
+  presence. Use `remove_character_shop_listing` with `shop_id` and
+  `character_id` when an objective should permanently hide one listing.
 
   General shops use `markup` and optional `buying.enabled`. Their listings own a
   normal `item`; retail price is `ceil(item.value * markup)`, while merchants
@@ -5795,6 +5925,45 @@ player-specific `last_played`, live save data, or local-only image ids.
 
 ## Story Image Rules
 
+- Every authored story image must support a real hosted URL. Use a portable
+  nested slot for ordinary story assets:
+
+  ```json
+  {
+    "image": {
+      "url": "https://example.com/image.png",
+      "hosted_url": "https://example.com/image.png",
+      "local_image_id": "",
+      "source": "hosted",
+      "prompt": "Optional prompt or provenance metadata",
+      "negative_prompt": "",
+      "seed": null,
+      "model": ""
+    }
+  }
+  ```
+
+  `url` is the portable reference; when `hosted_url` is present, keep it equal
+  to `url`. `local_image_id` is optional local runtime linkage and must never be
+  the only image reference in a public story. Never author placeholder, blank,
+  transparent, or fake images. A missing real image is `null`/absent until a
+  real hosted or generated image exists.
+- Use this nested slot on `generate_profile_image`,
+  `generate_solo_normal_image`, and `generate_story_image` rewards; story
+  inventory items; general-shop items; curated/generated job reward items;
+  clothing-shop outfits; and any granted outfit that intentionally owns image
+  art. The runtime resolves an existing local image first, then the hosted URL,
+  then generates from the prompt. A resolved hosted image must not trigger a
+  Perchance request.
+- `generate_profile_image` and `generate_solo_normal_image` may omit the nested
+  image to generate from the current runtime character. `generate_story_image`
+  must have either a real image reference or a prompt. Hosted story-image
+  rewards may omit the prompt, though useful prompt/provenance metadata is
+  encouraged.
+- `title_card_image` and character `profile_image_presentations` remain their
+  specialized schemas documented elsewhere. They still require real hosted
+  URLs for public upload; do not replace those fields with the generic nested
+  slot.
 - `title_card_image` stores the active/default story image reference only.
 - Story title-card image history is local data outside the story definition.
 - Deleting a story definition must not delete local story images; reimporting the same story should be able to reuse existing local title-card images.
@@ -5871,6 +6040,8 @@ Use this before finalizing a story template.
 - Every output has a story-specific `completion_instruction`; none use generic
   title-repeat boilerplate such as `Resolve the immediate outcome of {title}
   and move to the next objective`.
+- Every objective has non-empty, story-specific `while_active_guidance`; none
+  omit it or use generic filler.
 - Every objective with a `summary` field has a non-empty, story-specific,
   player-facing hint or context note that helps the player understand how to
   approach the objective without spoiling hidden outcomes.
@@ -5958,9 +6129,10 @@ Use this before finalizing a story template.
   court, or come onto the player while preserving explicit choice.
 - Every full non-player character in every story container has a complete
   opposite male/non-male fallback presentation so both romanceable adaptation
-  and profile-level swap-all remain
-  coherent. The entire romanceable cast uses the canonical 40% male / 40% female
-  / 20% futanari mix with deterministic rounding.
+  and profile-level swap-all remain coherent. If the creator selected the
+  optional authored default-presentation balance, the entire romanceable cast
+  uses the canonical 40% male / 40% female / 20% futanari mix with deterministic
+  rounding and evenly distributed futanari fallbacks.
 - No objective chain expects one player message to complete multiple
   consecutive objectives; EmberAdventures checks one selected objective at a time.
 - Relationship progress that should be deterministic uses `adjust_relationship`
