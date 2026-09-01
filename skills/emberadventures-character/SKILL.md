@@ -17,7 +17,7 @@ This skill can use a separate preferences file. It is the only allowed file refe
 
 ## Version and Update Check
 
-Current skill version: `1.0.22`.
+Current skill version: `1.0.23`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to 
@@ -915,6 +915,13 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "starting_inventory": [],
     "starting_known_facts": [],
     "starting_nsfw_known_facts": [],
+    "chat_story": "",
+    "chat_opening_message": "",
+    "chat_starting_location": {
+      "label": "",
+      "place": "",
+      "activity": ""
+    },
     "created_at": "<actual ISO 8601 creation timestamp>",
     "updated_at": "<actual ISO 8601 update timestamp>"
   }
@@ -1337,6 +1344,43 @@ Outfits are immutable clothing presets stored on the character definition. When 
 
 - `starting_nsfw_known_facts`: Optional array of adult-only facts known when play starts. Keep it separate from `starting_known_facts`; the runtime copies it to `nsfw_known_facts` and gates it by the active profile. Use `[]` when there are no adult-only facts.
 
+#### Standalone Character Chat Scenario
+
+Standalone characters may include a lightweight authored starting scenario for the
+character library's Chat action. These fields are optional. Use blank strings and a
+blank location object when no authored scenario is needed. They do not create
+objectives, branches, rewards, shops, or other full-story systems.
+
+- `chat_story`: Inspectable setup context for a new game started through this
+  character's Chat action. Describe the immediate premise, relevant history, current
+  situation, and durable constraints that the AI needs to continue the interaction.
+  Keep it self-contained and focused on this character and the player. The player can
+  inspect this text before starting and may replace it with their own opening guidance,
+  so do not store secrets that must remain hidden from the player. This field is not a
+  transcript and must not prescribe the player's dialogue, thoughts, feelings, or
+  important decisions.
+- `chat_opening_message`: Exact first visible message for the authored Chat scenario.
+  Write finished in-game prose and dialogue rather than an instruction to generate a
+  message. Establish an actionable moment and leave control of the player to the
+  player. Use supported runtime tokens such as `|[player_name]|` when the text needs
+  the selected player's identity. Leave this blank when the AI should generate the
+  opening from `chat_story` instead.
+- `chat_starting_location`: Exact object with only `label`, `place`, and `activity`.
+  `label` is a short player-facing location name. `place` concretely describes where
+  the scene occurs. `activity` describes what the character and player are presently
+  doing and should work as scene/image context. Either provide all three nonblank
+  strings or leave all three blank. Do not add coordinates, world-map topology, NPC
+  lists, objectives, or runtime location ids.
+
+Authored Chat fields are defaults, not commands the player must accept. The game tells
+the player when authored content exists, lets them inspect it, and lets them override
+the location or opening guidance before creating the save. Author these fields so the
+scenario still makes sense when the player chooses a different valid location or
+direction. Once a Chat game begins, the chosen authored or overridden setup is copied
+into that save; later edits to the library character must not retroactively change an
+existing game. Importing this character into a normal story does not start or inject
+the Chat scenario.
+
 - `stats`: Optional object of game-specific integer stats. Keys are authored,
 readable stable identifiers such as `strength`, `agility`, `mana`, or
 `capacity_cost`; EmberAdventures does not prescribe a fixed
@@ -1553,13 +1597,18 @@ this checklist. Do not call an entry finished until all checks pass:
     `starting_nsfw_known_facts` and are not duplicated in normal known facts.
     `starting_held_items` is an object containing only `right_hand` and
     `left_hand`, with item descriptions or `null` values.
-16. When `stats` is present, it is an object with non-empty stable keys and
+16. Optional Chat scenario fields use their exact shapes: `chat_story` and
+    `chat_opening_message` are strings; `chat_starting_location` contains only
+    `label`, `place`, and `activity`, which are either all nonblank or all blank.
+    The opening never controls the player, the scenario is safe for player inspection,
+    and the three fields describe one coherent starting situation.
+17. When `stats` is present, it is an object with non-empty stable keys and
     JavaScript safe-integer values. It is omitted when the character does not
     need authored numeric stats.
-17. Every character and player reference uses a supported token, resolves to a
+18. Every character and player reference uses a supported token, resolves to a
     known stable character id where applicable, and appears only in a JSON
     value, never a JSON key.
-18. Loli characters are never NSFW or sexualized, have no NSFW known facts or
+19. Loli characters are never NSFW or sexualized, have no NSFW known facts or
     outfits, and have sufficient covering clothing. Every character under 18
     is marked as loli, and every character not marked as loli is at least 18.
 
