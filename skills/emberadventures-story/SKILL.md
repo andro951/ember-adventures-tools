@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.45`.
+Current skill version: `1.0.47`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -595,6 +595,48 @@ with rollback and choice support.
     against another draft, and no review from another thread/model. If two
     internal options look useful, merge them yourself before final output. Do
     not produce "base plus suggested improvements" as the final result.
+
+## Stories Embedded in Standalone Characters
+
+A standalone character definition may optionally place a complete story in its
+`chat_story_template` field. Use this mode when the character supports a real
+authored arc with objectives, branches, rewards, locations, shops, endings, or
+other story systems. Apply every normal schema, quality, safety, validation, and
+release requirement in this skill; an embedded character story is not a reduced
+or informal story format.
+
+Author and validate the story through the normal
+`{ "app": "EmberAdventures", "exportType": "story-template", "storyTemplate": ... }`
+wrapper while working. When inserting it into a character definition, copy only
+the complete inner `storyTemplate` object into `chat_story_template`. Never put
+the outer export wrapper, design notes, prose summary, partial objective
+fragment, or any non-story data in that field.
+
+The surrounding standalone character is the story's principal character. Use
+that character's exact stable id anywhere the story must identify its principal
+character, and design the story so EmberAdventures can bind the authoritative
+surrounding character definition at launch. The player is selected through the
+character Chat launcher, so do not make the arc depend on a fixed player name,
+appearance, personality, dialogue, thoughts, or decisions. Use supported player
+tokens where player identity is needed.
+
+The story's `title` and `description` are shown in the character Chat launcher.
+Make the description short, appealing, accurate, and free of spoilers, hidden
+routes, secret identities, unreached transformations, and ending information.
+
+A character may contain both an embedded full story and the lightweight
+`chat_story`, `chat_opening_message`, and `chat_starting_location` fields. They
+are separate launch choices:
+
+- **Just Chat** uses only the lightweight fields. When any lightweight authored
+  setup exists, the launcher selects Just Chat by default and lets the player
+  inspect or replace that setup.
+- **Play Story** uses only `chat_story_template`. Its own `messages`, opening
+  location, objectives, state, progression, and endings are authoritative.
+- Never merge the lightweight opening into the full story, copy the full story's
+  opening into the lightweight fields automatically, or treat either choice as
+  an override of the other. They may deliberately begin similarly, but remain
+  independently authored experiences.
 
 ## Required Output Wrapper
 

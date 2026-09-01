@@ -17,7 +17,7 @@ This skill can use a separate preferences file. It is the only allowed file refe
 
 ## Version and Update Check
 
-Current skill version: `1.0.23`.
+Current skill version: `1.0.24`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to 
@@ -922,6 +922,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       "place": "",
       "activity": ""
     },
+    "chat_story_template": null,
     "created_at": "<actual ISO 8601 creation timestamp>",
     "updated_at": "<actual ISO 8601 update timestamp>"
   }
@@ -1381,6 +1382,16 @@ into that save; later edits to the library character must not retroactively chan
 existing game. Importing this character into a normal story does not start or inject
 the Chat scenario.
 
+- `chat_story_template`: Optional complete EmberAdventures `storyTemplate` object for
+  players who want a full authored story with this character instead of an open-ended
+  chat. Use `null` when no full story is included. Never hand-author, summarize,
+  partially copy, or invent fields inside this object using the Character skill. Load
+  and follow the EmberAdventures Story skill, create the story there, and place only
+  its complete inner `storyTemplate` object in this field, never the outer export
+  wrapper or any non-story data. The lightweight Chat fields may remain filled when a
+  full story exists: they define the separately selectable Just Chat opening and do
+  not override, merge into, or replace the full story.
+
 - `stats`: Optional object of game-specific integer stats. Keys are authored,
 readable stable identifiers such as `strength`, `agility`, `mana`, or
 `capacity_cost`; EmberAdventures does not prescribe a fixed
@@ -1602,6 +1613,10 @@ this checklist. Do not call an entry finished until all checks pass:
     `label`, `place`, and `activity`, which are either all nonblank or all blank.
     The opening never controls the player, the scenario is safe for player inspection,
     and the three fields describe one coherent starting situation.
+    `chat_story_template` is either `null` or only a complete inner `storyTemplate`
+    object created and validated under the EmberAdventures Story skill. It may coexist
+    with the lightweight fields because Full Story and Just Chat are separate launch
+    choices.
 17. When `stats` is present, it is an object with non-empty stable keys and
     JavaScript safe-integer values. It is omitted when the character does not
     need authored numeric stats.
