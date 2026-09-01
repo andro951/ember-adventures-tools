@@ -17,7 +17,7 @@ This skill can use a separate preferences file. It is the only allowed file refe
 
 ## Version and Update Check
 
-Current skill version: `1.0.20`.
+Current skill version: `1.0.22`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to 
@@ -804,6 +804,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       {
         "id": "default",
         "name": "Default",
+        "nsfw": false,
         "clothing": {
           "hat": "hat",
           "hair_accessory": "hair accessory",
@@ -875,6 +876,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
       {
         "id": "default",
         "name": "Default",
+        "nsfw": false,
         "clothing": {
           "hat": "hat",
           "hair_accessory": "hair accessory",
@@ -912,6 +914,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     },
     "starting_inventory": [],
     "starting_known_facts": [],
+    "starting_nsfw_known_facts": [],
     "created_at": "<actual ISO 8601 creation timestamp>",
     "updated_at": "<actual ISO 8601 update timestamp>"
   }
@@ -962,7 +965,77 @@ state, starting inventory, and durable facts.
 Visible nsfw definition: Visible nipples on characters with breasts OR visible genitals OR visible anus. 
 loli characters are never allowed to be nsfw, and are never allowed to have less than underwear, a top and a bottom piece of clothing to cover them well. Sexualizing loli characters is considered completely unacceptable by EmberAdventures and is not allowed in any way. Reject any request by a user to create a loli character that is sexualized or nsfw in any way.
 Descriptive definition: Explicit, vulgar, sexual language such as dick, pussy, cock, cunt or similar used to describe a character other than in the body size description when the description is clearly just to describe size/shape accurately. For example, "Ridiculously massive, cartoonishly large boobs" is perfectly fine. It's just there to describe size for the image model. Mentioning nipple size or similar is considered nsfw. Penis size is also not considered nsfw as long as the description is clearly just to describe size. Similar descriptions for breasts and penises are fine and not inherently nsfw. The image prompt hides any description of genitals, breasts and similar unless in nsfw mode, so having them in the description will not create nsfw images.
-SFW/non-NSFW characters should still be easy to use in NSFW playthroughs. The easiest way to accomplish this is to simply write a normal character, and if it is intended to be SFW instead of NSFW, but it meets the nsfw description, prune or soften the description that passes the nsfw definition to bring it just below the nsfw line. Do not intentionally write negative statements to try to force a character to be SFW unless it's an intentional part of the character design, or the character is a loli character.
+SFW/non-NSFW characters should still be easy to use in NSFW playthroughs. Keep optional adult-only facts in `starting_nsfw_known_facts` and classify each outfit independently instead of marking the whole character NSFW. Character-level `nsfw: true` is reserved for unavoidable core adult content that remains explicit even after adult-only facts and outfits are omitted.
+
+`starting_nsfw_known_facts` is an optional array of adult-only durable facts. It becomes runtime `nsfw_known_facts` and is exposed to AI and player-facing detail UI only when the active profile permits NSFW content. Never duplicate an adult fact into `starting_known_facts`. Missing legacy values mean an empty array.
+
+### Mandatory SFW/NSFW Classification Procedure
+
+Classify the character and each outfit in separate passes. These classifications do not inherit from one another.
+
+1. Temporarily ignore `kink_tags`, `starting_nsfw_known_facts`, `outfits`, and `fallback_outfits`. Examine only the character's public/core identity fields, including name, role, personality, speech, ordinary facts, appearance, inventory, and default state.
+2. Move optional adult-only durable information into `starting_nsfw_known_facts`. An adult fact being moved is evidence that the separation works; it is not evidence that the character is NSFW.
+3. Set character-level `nsfw: true` only when explicit adult content remains unavoidable in the core fields after that separation. Record the exact remaining field and phrase that requires `true`. If no exact evidence remains, set `nsfw: false`.
+4. Classify every canonical and fallback outfit independently from its own complete clothing and intended presentation. Ignore the character-level flag, adult facts, kink tags, and the classifications of other outfits.
+5. Check each starting outfit after classification. A SFW character needs a genuinely SFW starting outfit and at least one SFW outfit in each presentation. Change the starting selection or revise an outfit when necessary; never make the whole character NSFW merely to satisfy this invariant.
+
+The following facts never make a character NSFW by themselves:
+
+- the character has one or many NSFW outfits;
+- the character has `starting_nsfw_known_facts` or sexual `kink_tags`;
+- the character is flirtatious, seductive, sensual, romantic, attractive, confident, dominant, submissive, a succubus/incubus, or an adult romance option;
+- the character has large breasts, a penis-size value, exaggerated body proportions, or other neutral body-shape data;
+- the character can participate in NSFW play when an adult profile is active.
+
+Character-level SFW examples include a flirtatious ember demon with optional adult power-dynamic facts, a seductive vampire with lingerie presets, a werewolf whose adult arousal response is isolated in `starting_nsfw_known_facts`, and a shapeshifter with optional voyeurism facts. Character-level NSFW examples include a character whose unavoidable public role or personality explicitly describes sex acts, whose ordinary public facts contain explicit genital or sex-act prose that cannot be separated without changing the concept, or whose core concept requires visible nipples, genitals, or anus outside an optional outfit. When a coherent SFW core remains after adult facts and outfits are hidden, the character is SFW.
+
+Do not manufacture an adult fact merely to populate `starting_nsfw_known_facts`. An empty array is valid. Do not copy one generic adult fact across unrelated characters during a batch.
+
+### Outfit Purpose Test And Borderline Examples
+
+Judge the complete outfit, not isolated keywords. Ask: "Is this primarily clothing for travel, work, combat, ceremony, fashion, swimming, lounging, or sleeping, or is its primary purpose sexual display/fetish presentation?" Attractive styling does not change an ordinary outfit's purpose.
+
+Normally SFW:
+
+- fitted suits, uniforms, armor, workwear, travel clothes, formal gowns, fitted dresses, and fashionable fantasy clothing;
+- an open-collar or partially open shirt, including a male bare upper chest;
+- ordinary crop tops, miniskirts, high slits, low necklines, corset tops, thigh-high stockings, or garters when the complete outfit is fashion rather than sexual display;
+- ordinary opaque bikinis, one-piece swimsuits, swim briefs, sports bras, gym clothing, pajamas, robes, and normal sleepwear;
+- sheer sleeves, lace trim, mesh panels, or isolated cutouts that do not expose nipples, genitals, or anus and do not make sexual display the outfit's purpose;
+- practical chest/body harnesses used as armor, climbing equipment, weapon support, ritual equipment, or fantasy adventuring gear.
+
+Normally NSFW:
+
+- lingerie intended as erotic display, fishnet teddies, fetishwear, bondage gear, rope harness sets, and sexual latex outfits;
+- g-strings, c-strings, minimal chain sets, strategically placed ribbons, or garments designed to cover only nipples/genitals;
+- transparent or sheer torso/lower-body garments that expose nipples, genitals, or anus;
+- open garments with no meaningful underlayer when the presentation is designed around exposing breasts or genitals;
+- hypersexualized cosplay, extreme sling dresses, micro garments, or cutout outfits whose primary purpose is showing as much body as possible;
+- a decorative strap harness presented as intimate/fetishwear rather than functional equipment.
+
+Borderline decisions:
+
+- `bikini` is SFW by default; `micro bikini designed to expose as much as possible` is NSFW.
+- `black corset dress with a low neckline` can be SFW; `open-cup corset exposing nipples` is NSFW.
+- `sheer sleeves over an opaque bodice` is SFW; `transparent bodice exposing breasts` is NSFW.
+- `leather battle harness supporting armor` is SFW; `minimal leather fetish harness with garters and no ordinary coverage` is NSFW.
+- `nightshirt`, `pajamas`, or an ordinary opaque nightgown is SFW; an erotic negligée or lingerie sleep set is NSFW.
+- A bra and underwear listed underneath ordinary outer clothing never make the outfit NSFW. An underwear-only outfit may be SFW when it is ordinary nonsexual changing-room, medical, athletic, or similar presentation; erotic lingerie presentation is NSFW.
+
+Words such as `open`, `fitted`, `short`, `slit`, `sheer`, `corset`, `harness`, `bikini`, `stockings`, `garter`, `lounge`, `sleepwear`, `formal`, `armor`, and `battle` are not automatic classifications. Use the full clothing composition and purpose.
+
+For equivalent canonical/fallback outfits, classifications should normally match because presentation gender does not change purpose. A mismatch requires a concrete clothing difference, such as one version being opaque and the other exposing anatomy. Never classify one presentation as NSFW merely because it contains a bra, skirt, breasts, or feminine construction.
+
+For batch creation, migration, or review, inspect every character and outfit individually. Before finalizing, audit every `nsfw: true` value:
+
+- Character `true`: identify the exact unavoidable core field and phrase.
+- Outfit `true`: identify the exact clothing combination or presentation purpose.
+- If the explanation is only "the character has adult content," "the outfit is revealing," or a single keyword, the classification is unsupported and must be reconsidered.
+- If ordinary formalwear, armor, workwear, travel clothes, swimwear, or sleepwear are broadly becoming NSFW across the batch, stop and redo the outfit-purpose review instead of accepting the pattern.
+
+Every newly authored outfit must include `nsfw: true` or `nsfw: false`. Mark an outfit NSFW when its purpose is sexual display, fetish presentation, or exposing as much as possible even if nipples, genitals, and anus remain narrowly covered. Ordinary attractive, fitted, fashionable, swimsuit, or revealing clothing can remain SFW when sexual display is not its primary purpose. A character with `nsfw: false` must have an SFW starting outfit and at least one SFW outfit in both canonical and fallback presentations. Missing legacy outfit flags inherit the character-level `nsfw` value.
+
+Loli or under-18 characters must have `nsfw: false`, an empty `starting_nsfw_known_facts`, and only SFW outfits. Reject any request that violates this rule.
 
 - `can_die`: Boolean internal plot armor. Always set this to false for standalone characters.
 
@@ -1033,89 +1106,97 @@ The character's gender is whatever default gender the character is supposed to b
 
 - `starting_relationship_to_player`: Starting relationship text copied into runtime when a new game/import begins. Examples: `"self"`, `"none"`, `"trusted companion"`, `"professional handler"`, `"rival"`, `"romantic partner"`.
 
-Character, common title and pronoun references: When any text field needs to mention a character's name, pronouns, or the gender specific titles listed below, including when a character refers to itself, use the references below instead of hardcoding the resulting word(s). References resolve from the character's finalized runtime name and gender presentation. This supports the gender flexibility required by all characters.
-
-Use the character's stable character ID in every character reference. References may appear only in JSON values, never in JSON keys.
+Character, common title and pronoun references: When any text field needs to mention the character definition's own name, pronouns, or the gender specific titles listed below, use the ID-less references below instead of hardcoding the resulting word(s). The enclosing character definition supplies the identity, finalized name, and gender presentation. References may appear only in JSON values, never in JSON keys.
 
 Reference types:
 
 Names:
-- Full name: `|[character:stable-character-id]|`
+- Full name: `|[character]|`
   - Example result: `Akane Fujimori`
-- First name: `|[character_first:stable-character-id]|`
+- First name: `|[character_first]|`
   - Example result: `Akane`
 
 Pronouns:
-- Subject pronoun: `|[character_subject_pronoun:stable-character-id]|`
+- Subject pronoun: `|[character_subject_pronoun]|`
   - Male: `he`
   - Non-male: `she`
-- Subject-pronoun shorthand: `|[character_pronoun:stable-character-id]|`
+- Subject-pronoun shorthand: `|[character_pronoun]|`
   - Male: `he`
   - Non-male: `she`
-- Object pronoun: `|[character_object_pronoun:stable-character-id]|`
+- Object pronoun: `|[character_object_pronoun]|`
   - Male: `him`
   - Non-male: `her`
-- Possessive determiner: `|[character_possessive_pronoun:stable-character-id]|`
+- Possessive determiner: `|[character_possessive_pronoun]|`
   - Male: `his`
   - Non-male: `her`
   - Use this before a noun, such as `his sword` or `her sword`.
-- Independent possessive pronoun: `|[character_independent_possessive_pronoun:stable-character-id]|`
+- Independent possessive pronoun: `|[character_independent_possessive_pronoun]|`
   - Male: `his`
   - Non-male: `hers`
   - Use this without a following noun, such as `The sword is his` or `The sword is hers`.
-- Reflexive pronoun: `|[character_reflexive_pronoun:stable-character-id]|`
+- Reflexive pronoun: `|[character_reflexive_pronoun]|`
   - Male: `himself`
   - Non-male: `herself`
 
 Gendered nouns and titles:
-- Person term: `|[character_person_term:stable-character-id]|`
+- Person term: `|[character_person_term]|`
   - Male: `man`
   - Non-male: `woman`
-- Honorific: `|[character_honorific:stable-character-id]|`
+- Honorific: `|[character_honorific]|`
   - Male: `Mr.`
   - Non-male: `Ms.`
-- Formal address: `|[character_formal_address:stable-character-id]|`
+- Formal address: `|[character_formal_address]|`
   - Male: `sir`
   - Non-male: `ma'am`
-- Monarch title: `|[character_monarch_title:stable-character-id]|`
+- Monarch title: `|[character_monarch_title]|`
   - Male: `king`
   - Non-male: `queen`
-- Royal-heir title: `|[character_royal_heir_title:stable-character-id]|`
+- Royal-heir title: `|[character_royal_heir_title]|`
   - Male: `prince`
   - Non-male: `princess`
-- Noble title: `|[character_noble_title:stable-character-id]|`
+- Noble title: `|[character_noble_title]|`
   - Male: `lord`
   - Non-male: `lady`
-- Spouse term: `|[character_spouse_term:stable-character-id]|`
+- Spouse term: `|[character_spouse_term]|`
   - Male: `husband`
   - Non-male: `wife`
-- Parent term: `|[character_parent_term:stable-character-id]|`
+- Parent term: `|[character_parent_term]|`
   - Male: `father`
   - Non-male: `mother`
-- Child term: `|[character_child_term:stable-character-id]|`
+- Child term: `|[character_child_term]|`
   - Male: `son`
   - Non-male: `daughter`
-- Sibling term: `|[character_sibling_term:stable-character-id]|`
+- Sibling term: `|[character_sibling_term]|`
   - Male: `brother`
   - Non-male: `sister`
-- Uncle/aunt term: `|[character_uncle_aunt_term:stable-character-id]|`
+- Uncle/aunt term: `|[character_uncle_aunt_term]|`
   - Male: `uncle`
   - Non-male: `aunt`
-- Nephew/niece term: `|[character_nephew_niece_term:stable-character-id]|`
+- Nephew/niece term: `|[character_nephew_niece_term]|`
   - Male: `nephew`
   - Non-male: `niece`
 
 Capitalization:
 - References do not infer capitalization from their position in a sentence.
 - Pronouns and gendered terms return lowercase text by default.
-- Add `_cap` immediately before the colon when the resolved word must begin with a capital letter.
+- Add `_cap` to the reference name when the resolved word must begin with a capital letter.
 - Examples:
-  - `|[character_subject_pronoun:stable-character-id]|` becomes `he` or `she`.
-  - `|[character_subject_pronoun_cap:stable-character-id]|` becomes `He` or `She`.
-  - `|[character_monarch_title:stable-character-id]|` becomes `king` or `queen`.
-  - `|[character_monarch_title_cap:stable-character-id]|` becomes `King` or `Queen`.
+  - `|[character_subject_pronoun]|` becomes `he` or `she`.
+  - `|[character_subject_pronoun_cap]|` becomes `He` or `She`.
+  - `|[character_monarch_title]|` becomes `king` or `queen`.
+  - `|[character_monarch_title_cap]|` becomes `King` or `Queen`.
 - Full-name and first-name references already preserve the character name's proper capitalization and do not need `_cap`.
 - Honorific references already return conventionally capitalized forms such as `Mr.` and `Ms.`.
+
+Presentation-dependent text about another character must be self-contained. Use
+`|[M|male text|female text]|`, where `M` or `F` is the default presentation,
+the second part is the exact male text, and the third part is the exact
+female/non-male text. Example:
+`|[M|her brother Aurek Emberlash|her sister Aurelia Emberlash]|`.
+If the player's preferences allow only one presentation, use that branch. If
+both or neither are selected, use the declared default. The token must contain
+exactly two internal `|` separators; both text branches must be non-empty and
+must not contain `|`, `|[`, or `]|`.
 
 Player references:
 - Player full name: `|[player_name]|`
@@ -1232,6 +1313,8 @@ Outfits are immutable clothing presets stored on the character definition. When 
 
 - `outfits[].name`: Player-facing outfit name. Valid examples: `"Default"`, `"Travel Gear"`, `"Guild Uniform"`, `"Formal Dress"`, `"Combat Armor"`, `"Sleepwear"`. This should be readable in UI. Do not put mechanical notes, AI instructions, or conditional logic in the name.
 
+- `outfits[].nsfw`: Required boolean on every newly authored outfit. Use the outfit-purpose test above. This flag controls SFW UI visibility, AI context, equipping, shops, rewards, and image generation; it does not replace character-level `nsfw`.
+
 - `outfits[].clothing`: Object using EmberAdventures clothing slots. Values are item descriptions or `null`. This object should describe the full preset as clearly as possible. Use precise garments/equipment, not broad vibes. Good examples: `"linen travel shirt"`, `"black leather corset"`, `"steel breastplate"`, `"knee-high buckle boots"`, `"silver serpent hairpin"`. Bad examples: `"sexy clothes"`, `"normal outfit"`, `"varies"`, `"whatever she wants"`, `"revealing but tasteful"`, `"armor or maid dress"`.
 
 - Clothing slots must come only from this supported list: `hat`, `hair_accessory`, `face`, `ears`, `neck`, `shoulders`, `bra`, `undershirt`, `shirt`, `over_shirt`, `coat`, `back`, `hands`, `right_wrist`, `left_wrist`, `right_fingers`, `left_fingers`, `waist`, `belt_accessory`, `underwear`, `pants`, `skirt`, `legwear`, `socks`, `feet`, and `other_accessory`. Do not make up or use any other clothing slots. If designing an outfit and none of the slots is clearly correct, use the one that makes the most sense. A missing slot or `null` means nothing is defined for that outfit slot.
@@ -1251,6 +1334,8 @@ Outfits are immutable clothing presets stored on the character definition. When 
 - `starting_inventory`: Array of starting inventory item strings or structured item objects if the item needs metadata. Use examples like `"Coin pouch"` or `{ "name": "Silver key", "note": "Opens the guild side door" }`.
 
 - `starting_known_facts`: Array of facts about the character that are known when play starts. Use concise strings. This is definition data, not chat history, current scene memory, or a field that changes during play. Do not include future information or spoilers.
+
+- `starting_nsfw_known_facts`: Optional array of adult-only facts known when play starts. Keep it separate from `starting_known_facts`; the runtime copies it to `nsfw_known_facts` and gates it by the active profile. Use `[]` when there are no adult-only facts.
 
 - `stats`: Optional object of game-specific integer stats. Keys are authored,
 readable stable identifiers such as `strength`, `agility`, `mana`, or
@@ -1430,7 +1515,9 @@ this checklist. Do not call an entry finished until all checks pass:
    `created_at` is preserved; `updated_at` changes only when the definition
    changes.
 6. `outfits` is a non-empty array, every outfit has a unique stable `id` and
-   coherent clothing object, and `starting_outfit_id` matches an outfit id.
+   coherent clothing object and explicit boolean `nsfw`, and
+   `starting_outfit_id` matches an outfit id. SFW characters have SFW starting
+   outfits and at least one SFW outfit in both presentations.
    Every outfit includes all intended visible and inner clothing layers.
    Animal or natural-form outfits use concrete body-covering slot values and
    never use `{}` as placeholder clothing.
@@ -1461,7 +1548,9 @@ this checklist. Do not call an entry finished until all checks pass:
     current inventory, or current known facts are present.
 14. `starting_trust`, `starting_attraction`, `starting_affection`, and any
     numeric `starting_arousal` are numbers from 0 to 10.
-15. `starting_inventory` and `starting_known_facts` are arrays.
+15. `starting_inventory`, `starting_known_facts`, and
+    `starting_nsfw_known_facts` are arrays. Adult facts occur only in
+    `starting_nsfw_known_facts` and are not duplicated in normal known facts.
     `starting_held_items` is an object containing only `right_hand` and
     `left_hand`, with item descriptions or `null` values.
 16. When `stats` is present, it is an object with non-empty stable keys and
@@ -1470,9 +1559,9 @@ this checklist. Do not call an entry finished until all checks pass:
 17. Every character and player reference uses a supported token, resolves to a
     known stable character id where applicable, and appears only in a JSON
     value, never a JSON key.
-18. Loli characters are never NSFW or sexualized and have sufficient covering
-    clothing. Every character under 18 is marked as loli, and every character
-    not marked as loli is at least 18.
+18. Loli characters are never NSFW or sexualized, have no NSFW known facts or
+    outfits, and have sufficient covering clothing. Every character under 18
+    is marked as loli, and every character not marked as loli is at least 18.
 
 ## Library Maintenance
 
