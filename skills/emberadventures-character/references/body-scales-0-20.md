@@ -245,27 +245,27 @@ V-shaped glute-only scale: 0 huge soft/fat volume → 10 completely flat → 20 
 
 | Value | Image-prompt phrase |
 |---:|---|
-| 0 | absurd extreme-fantasy soft/fat butt with enormously oversized plush glute volume, extreme roundness, and overwhelming rear projection; rearward projection from the lower-back line about **3 head-lengths** |
-| 1 | extremely huge soft fat butt with massive plush glute volume and enormous rounded projection; rearward projection from the lower-back line about **2.6 head-lengths** |
-| 2 | gigantic soft fat butt with very large plush glute volume and substantial rounded projection; rearward projection from the lower-back line about **2.3 head-lengths** |
-| 3 | enormous soft fat butt with large rounded cheeks and pronounced rear volume; rearward projection from the lower-back line about **2 head-lengths** |
-| 4 | very large soft fat butt with thick plush volume, strong roundness, and substantial projection; rearward projection from the lower-back line about **1.7 head-lengths** |
-| 5 | large soft fat butt with noticeably full rounded cheeks and generous projection; rearward projection from the lower-back line about **1.4 head-lengths** |
-| 6 | full soft butt with abundant natural fat volume and clear rounded projection; rearward projection from the lower-back line about **1.15 head-lengths** |
-| 7 | nicely full soft butt with noticeable plush volume and natural roundness; rearward projection from the lower-back line about **0.9 head-lengths** |
-| 8 | moderately full soft butt with gentle roundness and natural projection; rearward projection from the lower-back line about **0.65 head-lengths** |
-| 9 | small lean butt with little soft volume and limited rear projection; rearward projection from the lower-back line about **0.3 head-lengths** |
-| 10 | completely and totally flat butt with virtually no visible glute volume or rear projection; rearward projection from the lower-back line is effectively **0 head-lengths** |
-| 11 | extremely small lean glutes with only slight muscular shape and minimal projection; rearward projection from the lower-back line about **0.2 head-lengths** |
-| 12 | lean lightly toned glutes with modest muscular shape and little projection; rearward projection from the lower-back line about **0.35 head-lengths** |
-| 13 | fit glutes with clear muscular shape and moderate projection; rearward projection from the lower-back line about **0.5 head-lengths** |
-| 14 | athletic glutes with visibly developed muscle and firm rounded projection; rearward projection from the lower-back line about **0.7 head-lengths** |
-| 15 | muscular glutes with substantial muscle volume, strong roundness, and pronounced projection; rearward projection from the lower-back line about **0.9 head-lengths** |
-| 16 | very muscular glutes with large thick muscle mass and powerful rounded projection; rearward projection from the lower-back line about **1.15 head-lengths** |
-| 17 | bodybuilder glutes with very large deeply developed muscular volume and strong separation; rearward projection from the lower-back line about **1.45 head-lengths** |
-| 18 | extreme bodybuilder glutes with enormous hypertrophied muscle mass and exaggerated muscular projection; rearward projection from the lower-back line about **1.8 head-lengths** |
-| 19 | hyper-muscular fantasy glutes with colossal bulging muscle volume and extreme projection; rearward projection from the lower-back line about **2.3 head-lengths** |
-| 20 | absurd extreme-fantasy muscular glutes with gigantic impossible muscle volume and overwhelming rear projection; rearward projection from the lower-back line about **3 head-lengths** |
+| 0 | absurd extreme-fantasy soft/fat butt with enormously oversized plush glute volume, extreme roundness, and overwhelming glute projection; glute depth outward from the pelvis line about **3 head-lengths** |
+| 1 | extremely huge soft fat butt with massive plush glute volume and enormous rounded projection; glute depth outward from the pelvis line about **2.6 head-lengths** |
+| 2 | gigantic soft fat butt with very large plush glute volume and substantial rounded projection; glute depth outward from the pelvis line about **2.3 head-lengths** |
+| 3 | enormous soft fat butt with large rounded cheeks and pronounced glute volume; glute depth outward from the pelvis line about **2 head-lengths** |
+| 4 | very large soft fat butt with thick plush volume, strong roundness, and substantial projection; glute depth outward from the pelvis line about **1.7 head-lengths** |
+| 5 | large soft fat butt with noticeably full rounded cheeks and generous projection; glute depth outward from the pelvis line about **1.4 head-lengths** |
+| 6 | full soft butt with abundant natural fat volume and clear rounded projection; glute depth outward from the pelvis line about **1.15 head-lengths** |
+| 7 | nicely full soft butt with noticeable plush volume and natural roundness; glute depth outward from the pelvis line about **0.9 head-lengths** |
+| 8 | moderately full soft butt with gentle roundness and natural projection; glute depth outward from the pelvis line about **0.65 head-lengths** |
+| 9 | small lean butt with little soft volume and limited glute projection; glute depth outward from the pelvis line about **0.3 head-lengths** |
+| 10 | completely and totally flat butt with virtually no visible glute volume or outward projection; glute depth outward from the pelvis line is effectively **0 head-lengths** |
+| 11 | extremely small lean glutes with only slight muscular shape and minimal projection; glute depth outward from the pelvis line about **0.2 head-lengths** |
+| 12 | lean lightly toned glutes with modest muscular shape and little projection; glute depth outward from the pelvis line about **0.35 head-lengths** |
+| 13 | fit glutes with clear muscular shape and moderate projection; glute depth outward from the pelvis line about **0.5 head-lengths** |
+| 14 | athletic glutes with visibly developed muscle and firm rounded projection; glute depth outward from the pelvis line about **0.7 head-lengths** |
+| 15 | muscular glutes with substantial muscle volume, strong roundness, and pronounced projection; glute depth outward from the pelvis line about **0.9 head-lengths** |
+| 16 | very muscular glutes with large thick muscle mass and powerful rounded projection; glute depth outward from the pelvis line about **1.15 head-lengths** |
+| 17 | bodybuilder glutes with very large deeply developed muscular volume and strong separation; glute depth outward from the pelvis line about **1.45 head-lengths** |
+| 18 | extreme bodybuilder glutes with enormous hypertrophied muscle mass and exaggerated muscular projection; glute depth outward from the pelvis line about **1.8 head-lengths** |
+| 19 | hyper-muscular fantasy glutes with colossal bulging muscle volume and extreme projection; glute depth outward from the pelvis line about **2.3 head-lengths** |
+| 20 | absurd extreme-fantasy muscular glutes with gigantic impossible muscle volume and overwhelming glute projection; glute depth outward from the pelvis line about **3 head-lengths** |
 
 ## Chest — Female / Non-Male Presentation
 
