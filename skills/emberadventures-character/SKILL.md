@@ -17,7 +17,7 @@ This skill can use a separate preferences file. It is the only allowed file refe
 
 ## Version and Update Check
 
-Current skill version: `1.0.24`.
+Current skill version: `1.0.26`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to 
@@ -792,6 +792,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "name": "Character Name",
     "source": "Original",
     "creation_tool": "<Tool> <Model Number> (<Reasoning or Intelligence Level>)",
+    "catalog_hook": "A concise, spoiler-free reason to start a game with this character.",
     "genres": ["fantasy"],
     "kink_tags": ["optional searchable kink tag"],
     "nsfw": false,
@@ -931,7 +932,40 @@ only. Replace them with real ISO 8601 timestamps in every final file.
 
 ### Character Definition Field Contract
 
-Use this contract when creating EmberAdventures character definitions. The same character definition shape is used everywhere. Do not add any extra fields to the character file unless they are present in the example above or explicitly described in the field rules below.
+Use this contract when creating EmberAdventures character definitions. Do not add
+any extra fields to the character file unless they are present in the example
+above or explicitly described in the field rules below. Standalone library
+characters and characters embedded in stories intentionally use different
+subsets of this contract; follow the boundary below rather than copying every
+standalone field into a story.
+
+#### Standalone And Story-Embedded Fields
+
+The complete export example is a standalone character-library definition.
+Standalone definitions own their public discovery metadata and their optional
+character-launcher experiences.
+
+The following fields are standalone-only and must be omitted from every
+story-embedded character definition, including players, party characters, NPC
+shells and `full_character` definitions, and future-cast shells and
+`full_character` definitions:
+
+- `catalog_hook`
+- `genres`
+- `kink_tags`
+- `chat_story`
+- `chat_opening_message`
+- `chat_starting_location`
+- `chat_story_template`
+
+Story-embedded characters inherit discovery and content classification from the
+story. A story uses its own title, description, opening, state, and objectives;
+it never carries a nested standalone Chat launcher on one of its characters.
+This also prevents recursive stories inside stories.
+
+All other approved authored character fields follow their normal field rules in
+both contexts unless a later rule explicitly says otherwise. Runtime-only fields
+remain forbidden in both contexts.
 
 #### Field Purpose And Process-Leakage Standard
 
@@ -1345,6 +1379,16 @@ Outfits are immutable clothing presets stored on the character definition. When 
 
 - `starting_nsfw_known_facts`: Optional array of adult-only facts known when play starts. Keep it separate from `starting_known_facts`; the runtime copies it to `nsfw_known_facts` and gates it by the active profile. Use `[]` when there are no adult-only facts.
 
+- `catalog_hook`: Optional concise, spoiler-free player-facing pitch for the
+  standalone character in catalog and discovery UI. Explain why someone would
+  want to start a game with this character, usually in one or two sentences.
+  Keep it accurate to the character's available experiences without revealing
+  hidden routes, twists, transformations, or endings. It is display metadata,
+  not personality guidance, AI instructions, chat context, or a substitute for
+  `chat_story` or `chat_story_template.description`. Use `""` when no distinct
+  hook is needed. A SFW character's hook must itself be SFW. Omit this field from
+  every story-embedded character definition.
+
 #### Standalone Character Chat Scenario
 
 Standalone characters may include a lightweight authored starting scenario for the
@@ -1390,7 +1434,13 @@ the Chat scenario.
   its complete inner `storyTemplate` object in this field, never the outer export
   wrapper or any non-story data. The lightweight Chat fields may remain filled when a
   full story exists: they define the separately selectable Just Chat opening and do
-  not override, merge into, or replace the full story.
+  not override, merge into, or replace the full story. The inner story must set
+  `allow_any_player: true`. Do not duplicate the surrounding standalone character
+  in `state.player`, `state.players`, `state.characters`, NPC entries, or
+  `future_cast`. The engine automatically registers the authoritative surrounding
+  character under its stable standalone id before validating and launching the
+  attached story. The story may reference that stable id in supported character
+  references; a second embedded definition with the same id is invalid.
 
 - `stats`: Optional object of game-specific integer stats. Keys are authored,
 readable stable identifiers such as `strength`, `agility`, `mana`, or
@@ -1608,7 +1658,9 @@ this checklist. Do not call an entry finished until all checks pass:
     `starting_nsfw_known_facts` and are not duplicated in normal known facts.
     `starting_held_items` is an object containing only `right_hand` and
     `left_hand`, with item descriptions or `null` values.
-16. Optional Chat scenario fields use their exact shapes: `chat_story` and
+16. `catalog_hook` is a string containing an accurate, spoiler-free standalone
+    catalog pitch, or `""`. It is omitted from story-embedded characters.
+17. Optional Chat scenario fields use their exact shapes: `chat_story` and
     `chat_opening_message` are strings; `chat_starting_location` contains only
     `label`, `place`, and `activity`, which are either all nonblank or all blank.
     The opening never controls the player, the scenario is safe for player inspection,
@@ -1617,13 +1669,13 @@ this checklist. Do not call an entry finished until all checks pass:
     object created and validated under the EmberAdventures Story skill. It may coexist
     with the lightweight fields because Full Story and Just Chat are separate launch
     choices.
-17. When `stats` is present, it is an object with non-empty stable keys and
+18. When `stats` is present, it is an object with non-empty stable keys and
     JavaScript safe-integer values. It is omitted when the character does not
     need authored numeric stats.
-18. Every character and player reference uses a supported token, resolves to a
+19. Every character and player reference uses a supported token, resolves to a
     known stable character id where applicable, and appears only in a JSON
     value, never a JSON key.
-19. Loli characters are never NSFW or sexualized, have no NSFW known facts or
+20. Loli characters are never NSFW or sexualized, have no NSFW known facts or
     outfits, and have sufficient covering clothing. Every character under 18
     is marked as loli, and every character not marked as loli is at least 18.
 

@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.47`.
+Current skill version: `1.0.49`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -485,8 +485,9 @@ with rollback and choice support.
     them cleanly: one visible objective node per playable beat, `choices[]`
     owned by the choice objective, `next_objectives` for conditional routing,
     `target_input_group_id` on output transitions for grouped graph inputs, and
-    `exclusive_group` only for true one-path-only branch locks. Do not author
-    legacy `requires` in new stories.
+    `exclusive_group` only for true one-path-only branch locks. `requires` is a
+    first-class AND prerequisite list for target-authored dependency graphs;
+    never duplicate the same dependency as both `requires` and an output edge.
     For stories with dozens or hundreds of purchasable/talkable shop
     characters, use large-shop-stock mode: major/fixed story companions still
     need full depth, while stock characters should be compact but playable and
@@ -614,8 +615,12 @@ fragment, or any non-story data in that field.
 
 The surrounding standalone character is the story's principal character. Use
 that character's exact stable id anywhere the story must identify its principal
-character, and design the story so EmberAdventures can bind the authoritative
-surrounding character definition at launch. The player is selected through the
+character. Set `allow_any_player: true`. Do not copy the surrounding character
+into `state.player`, `state.players`, `state.characters`, NPC entries, or
+`future_cast`. EmberAdventures automatically registers the authoritative
+surrounding definition as a current story character under its stable standalone
+id before opening-state and token validation and before launch. A duplicate
+embedded definition with that id is invalid. The player is selected through the
 character Chat launcher, so do not make the arc depend on a fixed player name,
 appearance, personality, dialogue, thoughts, or decisions. Use supported player
 tokens where player identity is needed.
@@ -637,6 +642,27 @@ are separate launch choices:
   opening into the lightweight fields automatically, or treat either choice as
   an override of the other. They may deliberately begin similarly, but remain
   independently authored experiences.
+
+### Standalone Character Fields Do Not Enter Stories
+
+When creating, importing, or adapting a standalone character for a story, omit
+all standalone discovery and launcher fields from every embedded copy:
+
+- `catalog_hook`
+- `genres`
+- `kink_tags`
+- `chat_story`
+- `chat_opening_message`
+- `chat_starting_location`
+- `chat_story_template`
+
+This applies to `state.player`, every `state.players[]` option,
+`state.characters`, NPC shells and `full_character` definitions, and
+future-cast shells and `full_character` definitions. Story discovery belongs to
+the story's own metadata. Story catalog copy belongs in the story's `title` and
+`description`. Story openings and progression belong in the story's own
+messages, state, objectives, and outputs. Never embed one character's standalone
+Chat launcher or nested story inside another story.
 
 ## Required Output Wrapper
 
@@ -723,11 +749,28 @@ Story exports use this wrapper:
         "name": "Player Character Name",
         "source": "Original",
         "creation_tool": "<actual tool/model> (<reasoning level>)",
-        "genres": ["fantasy"],
         "nsfw": false,
         "loli": false,
         "can_die": false,
+        "romanceable": false,
         "gender": "female",
+        "fallback_name": "Player Character Name",
+        "fallback_outfits": [
+          {
+            "id": "fallback-default",
+            "name": "Fallback Default",
+            "nsfw": false,
+            "clothing": {
+              "undershirt": "plain cotton undershirt",
+              "shirt": "plain everyday shirt",
+              "underwear": "plain comfortable underwear",
+              "pants": "plain everyday trousers",
+              "socks": "plain socks",
+              "feet": "practical shoes"
+            }
+          }
+        ],
+        "fallback_starting_outfit_id": "fallback-default",
         "age": 25,
         "role": "Story protagonist",
         "personality_description": "Durable starting identity that preserves player agency.",
@@ -754,6 +797,7 @@ Story exports use this wrapper:
           "waist": 5,
           "legs": 5,
           "arms": 5,
+          "penis_size": 0,
           "skin_color": "",
           "eye_color": "",
           "hair_color": "",
@@ -767,6 +811,7 @@ Story exports use this wrapper:
           {
             "id": "default",
             "name": "Default",
+            "nsfw": false,
             "clothing": {
               "undershirt": "plain cotton undershirt",
               "shirt": "plain everyday shirt",
@@ -784,6 +829,7 @@ Story exports use this wrapper:
         },
         "starting_inventory": [],
         "starting_known_facts": [],
+        "starting_nsfw_known_facts": [],
         "default_seed": 0,
         "image_prompt_config": {
           "seed_enabled": true,
@@ -802,6 +848,28 @@ Story exports use this wrapper:
           "negative_prompt": "",
           "note": "",
           "male": false
+        },
+        "profile_image_presentations": {
+          "male": {
+            "url": "",
+            "local_image_id": "",
+            "source": "none",
+            "seed": null,
+            "prompt": "",
+            "negative_prompt": "",
+            "note": "",
+            "male": true
+          },
+          "non_male": {
+            "url": "",
+            "local_image_id": "",
+            "source": "none",
+            "seed": null,
+            "prompt": "",
+            "negative_prompt": "",
+            "note": "",
+            "male": false
+          }
         },
         "profile_images": {
           "active_image_id": "",
@@ -993,9 +1061,9 @@ Character-shop items should be minimal and reference `future_cast.items` by
 Use `price`, `locked`, structured `requirements`, and optional
 `unlock_reason` and `on_purchase_objective`. `purchased`, `purchase_count`, and
 `removed` are runtime fields; do not author them as starting story state.
-`purchase_story`,
-`purchase_objective`, and `purchase_story_objective` are accepted aliases, but
-`on_purchase_objective` is the normalized stored field. When the character is
+`on_purchase_objective` is the only approved field name. `purchase_story`,
+`purchase_objective`, and `purchase_story_objective` are invalid and cause
+validation failure. When the character is
 purchased, EmberAdventures starts that objective and selects it unless a locked
 urgent objective is currently active. Locked character-shop cards remain
 visible but show only the character name, a generic locked image, and the visible
@@ -1172,6 +1240,9 @@ Clothing shops use `type: "clothing"`. Each listing contains `id`, `title`,
 positive integer `price`, optional requirements/lock fields, and one complete `outfit` using the
 normal character outfit schema. Purchasing copies that complete preset into the
 selected player or owned party character's `outfits`; it does not equip it.
+Every newly authored shop outfit requires boolean `nsfw`. NSFW shop outfits are
+hidden, cannot be purchased, and do not queue images when the active profile is
+SFW or absent. Do not rely only on an objective or shop-level NSFW gate.
 Catalog outfits may be purchased independently for multiple characters, but the
 same character cannot purchase the same listing twice. Do not represent every
 shirt, shoe, or accessory as a separate inventory item unless a future feature
@@ -1416,7 +1487,7 @@ Then choose one output shape:
 | --- | --- |
 | **Linear** | One output. It applies one result and links to one next node. |
 | **Branch** | Multiple outputs. Player Choice presents them; AI Scene and Immediate AI classify among eligible private routes; Player Action and Automatic Transition check deterministic outputs in displayed priority order and use the first eligible one. |
-| **Finale** | No output. A side objective simply ends its side route. A main objective must explicitly continue in freeplay, end the adventure, or cause game over. |
+| **Ending output** | An output omits its destination and sets `ending_type` to `"freeplay"`, `"ending"`, or `"game_over"`. Different outputs from one objective may end differently. |
 
 Combine the family and shape to name every useful behavior:
 
@@ -1438,8 +1509,8 @@ Combine the family and shape to name every useful behavior:
 | Automatic Transition + Finale | **Automatic Finale** | End a route automatically when its structured requirements become true. |
 
 Player Choice with no output is invalid because it has no option to present.
-To let a choice lead to an ending, give the choice one or more outputs that link
-to explicit Finale nodes.
+To let a choice end a route, put `ending_type` on that exact choice output
+instead of routing through a separate ending node.
 
 Use modifiers without inventing more schema types:
 
@@ -1481,9 +1552,12 @@ Design each node in this order:
    rewards or reusable reward references, optional travel destination,
    eligibility requirements, and next node.
 
-Do not author `requires` in new stories. Graph reachability comes from output
-transitions and their `target_input_group_id`. Do not duplicate the same edge
-as both an output transition and `requires`.
+Prefer explicit output transitions when the source objective chooses or narrates
+a distinct route. Use `requires` when the target objective naturally declares
+one or more prerequisite objectives and no distinct source output is needed.
+Do not duplicate the same dependency as both an output transition and
+`requires`. When both are present for different reasons, every `requires` entry
+must complete and one explicit incoming transition group must also be satisfied.
 
 Incoming graph groups, Completion Requirements, Completion Conditions, and
 Output Requirements answer different questions:
@@ -1565,13 +1639,26 @@ relationship, location, or other state requirements into graph inputs.
   objective with no dependent objective, no `next_objectives`, and no terminal
   reward; that makes EmberAdventures fall back to objective picking instead of
   authored pacing.
-- Side objectives use `type: "side"`. Do not author `kind` solely to mark an
-  objective as side content; current normalization preserves `type` and may
-  discard `kind`.
+- Side objectives use `type: "side"`. `kind` is not an approved objective field
+  and causes validation failure.
 - Every nonterminal output destination and `target_input_group_id` must be
   valid.
+- `requires` is a first-class objective input list. Every listed objective id
+  is an AND prerequisite: the target becomes eligible only after all listed
+  objectives complete. Use it when an existing story graph is naturally
+  authored from the target back to its prerequisites; do not duplicate the
+  same edge in `next_objectives` unless a distinct output route is needed.
+- An objective with no explicit output may use its own non-empty
+  `completion_instruction` when later objectives reference it through
+  `requires`. The engine applies that instruction when the objective completes
+  and follows the inverse dependency edge. Output-level instructions remain
+  preferred when the source chooses among distinct outputs.
 - Objective rewards must reference valid future-cast ids when they introduce
   people.
+- `introduce_future_character.scene_presence` is required and must be exactly
+  `"active"`, `"nearby"`, or `"none"`. `"active"` adds the introduced NPC to
+  the current scene; `"nearby"` places the NPC at the specified location but
+  outside the active scene; `"none"` does not make the NPC scene-active.
 - Objectives must not have step fields.
 - Player Action, AI Scene, and Immediate AI objectives need one verifier
   condition. Every output needs a safe authored completion instruction.
@@ -1600,7 +1687,7 @@ relationship, location, or other state requirements into graph inputs.
   verifier classifies the full scene into exactly one private authored outcome.
   Outcome-route `requirements` are hard eligibility filters. Only eligible
   routes are shown to the classifier. Always include exactly one
-  `fallback: true` or `default: true` route with no requirements so completed
+  `fallback: true` route with no requirements so completed
   objectives always have a valid ambiguous/neutral/default route.
 - EmberAdventures checks one selected objective at a time. Do not design chains that
   expect one player message to complete multiple consecutive objectives. Use
@@ -1763,11 +1850,25 @@ relationship, location, or other state requirements into graph inputs.
   `introduce_future_character`, and queuing images with
   `generate_profile_image`, `generate_solo_normal_image`, or
   `generate_story_image`.
+- Use `replace_character_definition` to replace one already-materialized
+  character's definition with a normal future-cast source definition while
+  retaining the target character's stable runtime identity, relationship
+  continuity, party/location membership, and story history. The exact reward
+  fields are `type`, `target_character_id`, `source_future_character_id`, and
+  `reason`. The source future-cast entry is consumed by the replacement and
+  must not also be introduced or promoted as a separate character. The new
+  humanoid form is an ordinary `full_character`; do not create a special
+  transformation character schema.
 - Use `generate_profile_image` only when a change affects face, hair, arms,
   torso, chest, shoulders, or overall silhouette. Use
   `generate_solo_normal_image` for major visible changes that should appear in
   chat. Leg-only or lower-body-only changes should normally generate a solo
   normal image, not a profile image.
+- `generate_solo_normal_image` may include an optional `outfit_id` belonging to
+  its target. This uses that outfit only when constructing the rewarded image
+  prompt. It does not equip the outfit, change active clothing, or mutate the
+  character. Use a separate `equip_outfit` reward when the clothing should
+  actually change in runtime state.
 - Use `generate_story_image` for authored non-character images that strengthen
   the story: important objects, locked doors, clues, symbols, maps, memory
   objects, locations, horror reveals, jump scares, ritual scenes, and other
@@ -1789,9 +1890,8 @@ relationship, location, or other state requirements into graph inputs.
   player-facing text should call them `party members`.
 - `npc_directory` holds NPCs and must use the current nested runtime shape:
   `npc_directory.locations.<stable-location-id>.characters.<npc name>`. Do not use
-  the old flat shape `npc_directory.<npc name>`. Runtime scene normalization
-  only resolves NPCs from the nested `locations` shape, so a flat opening NPC
-  can be removed from `scene.npcs_present` even if the opening text names them.
+  the old flat shape `npc_directory.<npc name>`. The flat shape is invalid and
+  causes validation failure.
 - `players` is optional and only for start-of-game playable character select.
   If used, `state.player` remains a fallback/default copy of the first option.
 - Unselected player options are not present in the scene or party.
@@ -1967,15 +2067,15 @@ Before finishing:
 - Scene-adjudicated hidden routing uses `route_control: "ai"` and
   `outcome_routes`, never a fake visible choice. Route ids and criteria are
   private, route ids are unique, exactly one route is the no-requirements
-  fallback/default, and every route has a valid next objective/input group,
+  fallback, and every route has a valid next objective/input group or ending type,
   and the objective does not also contain `next_objectives`.
 - Visual tree integrity is valid: every objective id is unique, every
   output id is unique, every nonterminal output destination exists, and every
   output has a valid `target_input_group_id`. Every non-starting main objective
   has at least one reachable incoming input group. Direct choice objectives
   have owned `choices[]`, visible option titles, and deterministic
-  rewards/effects. A main objective with no output is an explicit freeplay,
-  ending, or game-over Finale. Do not leave hidden/future objectives
+  rewards/effects. Every objective has at least one output; a freeplay, ending,
+  or game-over path sets `ending_type` on that specific output. Do not leave hidden/future objectives
   unreachable or rely on fallback objective picking as normal story flow.
 - Choice-heavy stories keep choice objectives meaningful but not constant:
   roughly 30-40% choice objectives for multiple-ending/Telltale-style requests,
@@ -2018,6 +2118,28 @@ Before finishing:
 - If duplicate surnames remain, every duplicate has an explicit family,
   household, clan, or source relationship in durable facts.
 - Embedded characters use the current character schema.
+- Standalone/public character-library definitions remain humanoid characters
+  aged 18 or older. A story-embedded humanoid may be younger than 18 only when
+  `nsfw` and `romanceable` are both `false` and both `starting_attraction` and
+  `starting_arousal` are `0`. Never place that character in sexual content,
+  nudity, spicy-scene participation, sexual rewards, or sexual image guidance.
+- Use `animal_definition`, not `full_character`, for a genuinely non-humanoid
+  animal form. An NPC or future-cast item contains exactly one of
+  `full_character` and `animal_definition`. An animal definition uses animal
+  fields such as `species`, `physical_description`,
+  `personality_description`, and `communication_style`; it does not contain
+  humanoid `appearance`, outfits, clothing, held items, romance, attraction,
+  arousal, NSFW, or loli fields. Animal images describe the animal directly and
+  never run humanoid age, anatomy, or clothing projection.
+- Required `animal_definition` fields are `version`, `id`, `name`, `source`,
+  `creation_tool`, `can_die`, `gender`, `age`, `role`, `species`,
+  `physical_description`, `personality_description`, `communication_style`,
+  `starting_relationship_to_player`, `starting_trust`, `starting_affection`,
+  `starting_state_of_mind`, `starting_physical_state`, `starting_pose`,
+  `starting_known_facts`, `created_at`, and `updated_at`. `stats` and the normal
+  image-reference/configuration fields are optional. Omitted image configuration
+  receives deterministic runtime defaults; do not add empty image metadata just
+  to imitate a humanoid definition.
 - Embedded characters use `speech_style` for durable dialogue behavior and
   `personality_description` for identity/motivation. Do not put TTS voice names,
   current mood, or private story instructions in `speech_style`.
@@ -2958,9 +3080,9 @@ Every objective needs:
   outputs, `choices` for Player Choice, or `outcome_routes` for AI-controlled
   hidden Branch outcomes.
 - Every output needs a stable id, its own completion instruction, optional
-  dialogue/rewards/travel/requirements, and a valid destination plus
-  `target_input_group_id`. A Finale intentionally has no output and instead
-  declares its terminal behavior.
+  dialogue/rewards/travel/requirements, and either a valid destination plus
+  `target_input_group_id` or an `ending_type`. Objectives never terminate by
+  themselves; only individual outputs do.
 
 `completion_criteria` and `completion_instruction` must be authored content,
 not generated boilerplate. Never write:
@@ -2982,12 +3104,11 @@ criteria must instead be decidable immediately from an already-finished scene,
 recent messages, and current state; it must not require another player action or
 narrator reply.
 
-Every non-terminal main objective must route intentionally. Use
+Every main objective must route intentionally. Use
 `next_objectives` for deterministic outputs, `choices` for visible player
 choices, or hidden `outcome_routes` when results depend on natural scene
-context. A main objective with no output must be an explicit freeplay, ending,
-or game-over Finale. Do not rely on fallback objective picking as normal story
-flow.
+context. An output may instead end through `ending_type`. An objective with no
+output is invalid. Do not rely on fallback objective picking as normal story flow.
 
 Do not design objectives so one player message should complete several
 objectives at once. EmberAdventures checks one selected objective at a time. If one
@@ -3239,6 +3360,7 @@ The main character-field mappings are:
 | `starting_held_items` | `held_items` |
 | `starting_inventory` | `inventory` |
 | `starting_known_facts` | `known_facts` |
+| `starting_nsfw_known_facts` | `nsfw_known_facts` |
 | `starting_outfit_id` plus `outfits` | `active_outfit_id` plus `clothing` |
 | `default_seed`, `image_prompt_config`, `default_profile_image` | generated runtime image state |
 
@@ -3247,6 +3369,13 @@ the game starts. Any fact learned, revealed, remembered, or changed during play
 belongs in runtime `known_facts`. Use an `add_state_list_item` reward with
 `field_path: ["player", "known_facts"]` for the player, or target a character and use
 `field_path: ["known_facts"]`. Never target `starting_known_facts`.
+
+`starting_nsfw_known_facts` is the separate reusable adult-only list copied
+into mutable `nsfw_known_facts`. It is visible to AI and player-facing detail
+UI only when the active profile permits NSFW content. Adult objectives may
+mutate runtime `nsfw_known_facts`; never target
+`starting_nsfw_known_facts`. Do not duplicate adult facts into normal known
+facts as a workaround.
 
 Generic state-path rewards use a positive runtime allowlist. A path is not valid
 merely because that object or value exists in the authored starting state.
@@ -3732,6 +3861,7 @@ what the character is currently wearing.
   "outfit": {
     "id": "guild-field-uniform",
     "name": "Guild Field Uniform",
+    "nsfw": false,
     "contexts": ["field work", "guild duty"],
     "clothing": {
       "undershirt": "fitted linen undershirt",
@@ -3757,6 +3887,7 @@ change the character's gender.
   "male_outfit": {
     "id": "private-evening",
     "name": "Private Evening Outfit",
+    "nsfw": false,
     "clothing": {
       "shirt": "fitted black evening shirt",
       "pants": "tailored black evening trousers"
@@ -3765,6 +3896,7 @@ change the character's gender.
   "non_male_outfit": {
     "id": "private-evening",
     "name": "Private Evening Outfit",
+    "nsfw": false,
     "clothing": {
       "shirt": "fitted black evening blouse",
       "skirt": "long black evening skirt"
@@ -4264,7 +4396,7 @@ Rules:
   match or when model output is unusable. It does not prevent a non-fallback
   route from winning whenever that route better fits the scene.
 - If the route should be hidden unless every specific route is ineligible, use
-  `default: true` or `fallback: true` with
+  `fallback: true` with
   `default_mode: "only_if_no_other_eligible"`. This is useful for true
   zero-specific-match defaults, not for ordinary ambiguity between eligible
   routes.
@@ -4273,19 +4405,22 @@ Rules:
   narration, completion messages, hints, or visible reward descriptions.
 - Each route must have a unique stable `id`, a non-empty `criteria` unless it is
   the fallback, a `completion_instruction`, a `rewards` array (empty is valid),
-  and an existing `next_objective_id` plus `target_input_group_id`.
+  and either an existing `next_objective_id` plus `target_input_group_id` or an
+  `ending_type`.
 - Do not combine `outcome_routes` with ordinary `next_objectives` on the same
   objective. Do not prefill runtime fields such as `selected_outcome_id`.
-- Route an ending outcome to an explicit Finale node. Do not terminate from an
-  individual Branch output.
+- Put `ending_type` directly on the specific outcome route that ends. Different
+  routes from the same objective may continue or use different ending types.
 
 ## Validation
 
 - `id` values are unique.
 - Exactly one main objective is the story start. It is active; other unreached
   objectives are hidden.
-- No clean objective authors legacy `requires`.
-- Every nonterminal output across `next_objectives`, `choices`, and
+- Every `requires` entry references an existing objective. All listed
+  prerequisites must complete before the target can activate. A dependency is
+  not duplicated as both `requires` and an output edge.
+- Every continuing output across `next_objectives`, `choices`, and
   `outcome_routes` has a unique stable id, an existing destination, a valid
   `target_input_group_id`, a completion instruction, and a rewards array.
 - Every non-starting main objective has at least one reachable incoming group.
@@ -4301,9 +4436,9 @@ Rules:
 - Deterministic Branch outputs are priority ordered. Non-fallback outputs have
   requirements and the unrestricted fallback, when used, is last.
 - Every AI outcome route has a unique id, private criteria, deterministic reward
-  objects, and an existing `next_objective_id` plus
-  `target_input_group_id`. Exactly one
-  route is the no-requirements fallback/default. AI-routed objectives do not
+  objects, and either an existing `next_objective_id` plus
+  `target_input_group_id` or an `ending_type`. Exactly one
+  route is the no-requirements fallback. AI-routed objectives do not
   also use `next_objectives`.
 - Player Action, AI Scene, and Immediate AI use one simple completion
   condition. Player Choice and Automatic Transition omit it.
@@ -4315,8 +4450,8 @@ Rules:
 - Automatic Transition contains no choice options, dialogue, AI route
   criteria, or completion condition.
 - Every bounded-resource cost output has a matching eligibility requirement.
-- Every main Finale specifies freeplay, ending, or game over and has a
-  non-empty ending message. Side Finales do not end the main story.
+- Every output either continues to a valid objective or sets `ending_type` to
+  exactly `freeplay`, `ending`, or `game_over`.
 - Cycles are intentional, reachable from outside the cycle, and cannot loop
   forever through unconditional Automatic Transitions.
 - Relationship/conversation-based hidden routing normally uses the two-objective
@@ -4487,7 +4622,7 @@ verbatim copy of Codex process instructions.
 
   Outfit overrides are gender-branch replacements. By default, provide both
   branches so foreign library outfits cannot enter the story. A selected
-  character whose normalized gender is `male` uses `male_outfits`; every other
+  character whose resolved gender is `male` uses `male_outfits`; every other
   gender uses `non_male_outfits`. When a branch is present, it must be a nonempty list of
   valid full outfit records, and its matching starting outfit id must reference
   an id in that list. That branch replaces all copied library outfits, starting
@@ -4521,7 +4656,8 @@ verbatim copy of Codex process instructions.
   `stateSyncStatus`, `spicySyncStatus`, `voiceMeta`, `voiceSpeakers`, or
   `objectiveComplete`.
 
-- `settings`: Legacy/import-tolerated starting settings/defaults for local templates only. Clean exported/public story definitions strip `settings`; do not rely on it for immutable story identity. Do not put story state here.
+- `settings` is not an approved story-template field and causes validation
+  failure. Do not put settings or story state there.
 
 - `source`: Use `"Original"` for original/source-free stories. This is the
   creative source label, not the creator's name, player name, profile name, or
@@ -4878,11 +5014,12 @@ and the story intentionally requires Character Library selection.
   adapted by `romanceable` or swap-all.
 
 - Story-embedded character definitions inherit discovery metadata from the
-  story. Omit `genres` and `kink_tags` from `state.player`, every
-  `state.players[]` option, `state.characters`, NPC shells and
-  `full_character` definitions, and every `future_cast.items[id]` shell and
-  `full_character`. Store story genres and kink tags only in their documented
-  top-level and `state.meta` locations.
+  story. Omit `catalog_hook`, `genres`, `kink_tags`, `chat_story`,
+  `chat_opening_message`, `chat_starting_location`, and `chat_story_template`
+  from `state.player`, every `state.players[]` option, `state.characters`, NPC
+  shells and `full_character` definitions, and every
+  `future_cast.items[id]` shell and `full_character`. Store story genres and
+  kink tags only in their documented top-level and `state.meta` locations.
 
 - Gender-flexible characters keep their canonical `name`, `gender`, `outfits`,
   and `starting_outfit_id`, and require `fallback_name`, nonempty
@@ -5002,10 +5139,9 @@ and the story intentionally requires Character Library selection.
 
 - `npc_directory.locations[id].characters`: Object keyed by NPC display name.
 
-- Do not use the old flat shape `npc_directory.<npc name>`. Runtime scene
-  normalization resolves NPCs from `npc_directory.locations.*.characters`, so a
-  flat NPC can be dropped from `scene.npcs_present` even when opening dialogue
-  uses that NPC's inline voice tag.
+- Do not use the old flat shape `npc_directory.<npc name>`. It is invalid and
+  causes validation failure. Use only
+  `npc_directory.locations.<location-id>.characters`.
 
 - NPC entry fields such as `name`, `gender`, `age`, `role`, `relationship`,
   `note`, `current_appearance`, `inspected`, `voice`, and `full_character` follow
@@ -5025,8 +5161,8 @@ and the story intentionally requires Character Library selection.
 
 - For an uninspected NPC without `full_character`, use `note` for one concise,
   player-visible summary of currently knowable appearance and personality. Do
-  not invent a separate shell `appearance` or `personality` field; current NPC
-  normalization stores that compact information in `note`.
+  not invent a separate shell `appearance` or `personality` field. Those fields
+  are invalid on an NPC shell; put the compact information in `note`.
 
 - Authored NPC `voice` is `null` or omitted. Never infer a TTS/screen-reader
   voice, actor, or character name. Runtime voice assignment belongs to the app.
@@ -5080,17 +5216,14 @@ and the story intentionally requires Character Library selection.
   relationship/default-state, and speech fields onto the shell when validation
   requires them, and keep those values consistent with `full_character`.
 
-- `future_cast.items[id]` and `full_character` must both include non-empty
+- Humanoid `future_cast.items[id]` shells and `full_character` definitions must
+  both include non-empty
   `outfits`, a valid `starting_outfit_id`, non-empty `fallback_outfits`, and a
-  valid `fallback_starting_outfit_id`. Animal, monster, spirit, slime,
-  natural-form, or otherwise unclothed characters still need at least one
-  outfit entry. A natural body covering outfit is valid, such as an outfit named
-  `"Natural Form"`, but it must use supported clothing slots. For example, use
-  `shirt` for natural feathers, fur, scales, shell, slime membrane, or another
-  body covering over the chest/back/arms, and `pants` for the lower body/tail.
-  Do not invent slots such as `full_body`; unsupported slots can normalize away
-  and make the outfit appear empty. The outfit's `clothing` object must not be
-  `{}`.
+  valid `fallback_starting_outfit_id`. A genuinely non-humanoid animal, monster,
+  spirit, or natural form uses `animal_definition` instead and has no outfit or
+  clothing fields. A humanoid character who merely has fur, scales, wings, a
+  tail, or another nonhuman feature remains a `full_character` and still follows
+  the humanoid outfit contract.
 
 - The story-wide future-cast check must include omissions. If an important
   planned companion, merchant, authority, antagonist, political/family figure,
@@ -5143,25 +5276,26 @@ and the story intentionally requires Character Library selection.
   `meet_condition`, `join_condition`, or hidden future-cast notes, not in
   character `known_facts`/`starting_known_facts`.
 
-- `future_cast.items[id].profile_images`, `images`: Legacy/import-tolerated image
-  history arrays on the future-cast shell. Do not generate them in new clean
-  templates. Inside `full_character`, use the canonical blank character image
+- `future_cast.items[id].profile_images` and shell-level `images` are not
+  approved future-cast shell fields and cause validation failure. Inside
+  `full_character`, use the canonical blank character image
   fields: blank `default_profile_image`, blank `profile_images`, and blank
   `images`. Generated image history stays local.
 
 - `future_cast.items[id].meet_condition`, `join_condition`: Optional condition text or `null`.
 
 - `future_cast.items[id].on_purchase_objective`: Optional objective id for the
-  character's follow-up/purchase story. `purchase_story`,
-  `purchase_objective`, and `purchase_story_objective` are accepted authoring
-  aliases. When the character is introduced by objective reward or purchased
+  character's follow-up/purchase story. This is the only approved field name;
+  `purchase_story`, `purchase_objective`, and `purchase_story_objective` cause
+  validation failure. When the character is introduced by objective reward or purchased
   from a character shop, EmberAdventures starts this objective and selects it
   unless a locked urgent objective is currently active.
 
 - `future_cast.items[id].on_unlock`: Object controlling introduction behavior.
 
 - `future_cast.items[id].on_unlock.greeting`: Optional narrator guidance used
-  only when the character unlocks. The top-level `greeting` is also supported.
+  only when the character unlocks. Do not duplicate it in a top-level
+  `greeting` field.
   Keep either form concise and scene-flexible. Do not use unsupported
   `ai_greeting` or `greeting_instruction` keys, and do not write boilerplate
   such as `has just been introduced by an objective reward`.
@@ -5247,14 +5381,14 @@ and the story intentionally requires Character Library selection.
 
 - Output `rewards`: Array of reward objects, bundle references, or template
   invocations on each `next_objectives`, `choices`, or `outcome_routes` entry.
-  A Finale may use objective-level rewards because it has no output. Future
-  character rewards must use `character_id` equal to an existing
+  Ending rewards belong to the exact ending output. Future character rewards
+  must use `character_id` equal to an existing
   `future_cast.items` object key. Do not use old reward bucket objects such as
   `rewards.unlock_locations`, `rewards.introduce_future_characters`, or
   `rewards.story_rules`. Do not use XP, level, rank, or progression-skill
   rewards while progression is shelved.
 
-Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `delete_outfit`, `delete_all_outfits`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `delete_outfit` and `delete_all_outfits` only for permanent runtime wardrobe removal, never to rewrite reusable character-definition outfit fields. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its generated form is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; its hosted form uses the same reward with `image.url`. It does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
+Supported deterministic objective rewards include: `introduce_future_character`, `make_future_character_recruitable`, `promote_future_character_to_party`, `replace_character_definition`, `unlock_location`, `add_item`, `grant_item`, `add_story_item`, `adjust_story_inventory`, `advance_time`, `complete_generated_job`, `start_objective`, `complete_objective`, `add_story_rule`, `remove_story_rule`, `set_state_field`, `modify_integer`, `modify_number`, `adjust_relationship`, `grant_outfit`, `equip_outfit`, `delete_outfit`, `delete_all_outfits`, `add_state_list_item`, `remove_state_list_item`, `kill_character`, `generate_profile_image`, `generate_solo_normal_image`, `generate_story_image`, `apply_reward_bundle`, and `apply_reward_template`. Do not invent reward types. Use `apply_reward_bundle` only as a reference to `state.reward_bundles`; do not put actual rewards inside the reference. Use `apply_reward_template` only as a typed invocation of `state.reward_templates`. Use `adjust_relationship` for objective-owned trust, attraction, affection, or arousal changes; `preset: "all"` means trust/attraction/affection and `preset: "all_and_arousal"` includes arousal. Use `grant_outfit` to add a complete saved outfit to a stable `character_id`; it does not equip unless `equip: true`. Use `equip_outfit` to atomically apply an already-owned `outfit_id`; never swap outfits by setting `active_outfit_id` directly. Use `delete_outfit` and `delete_all_outfits` only for permanent runtime wardrobe removal, never to rewrite reusable character-definition outfit fields. Use `add_story_item` and `adjust_story_inventory` for controlled story-owned resources/items. Use `advance_time` for additive game-clock pressure from travel, jobs, training, repairs, recovery, research, shopping, and chapter transitions. Use `complete_generated_job` only inside generated/story job turn-in objective choices. Use `generate_profile_image` only for changes that affect a character's face, hair, arms, torso, chest, shoulders, or overall silhouette. Use `generate_solo_normal_image` for major visible changes that should appear in chat. Leg-only changes should normally generate a solo normal image, not a profile image. Use `generate_story_image` for authored non-character story images such as important objects, locations, clues, ritual scenes, horror reveals, and jump scares. Its generated form is `{ "type": "generate_story_image", "id": "stable-image-id", "title": "Optional Display Title", "prompt": "exact positive image prompt", "negative_prompt": "optional negative prompt" }`; its hosted form uses the same reward with `image.url`. It does not require a target character. Every state-path reward must follow the definition-versus-runtime rules in the Rewards section; never target `starting_*`, `default_*`, `players`, or `durable_known_facts`.
 
 `remove_character_shop_listing` is also a supported deterministic reward. It
 requires stable `shop_id` and `character_id` values and hides that exact
@@ -5276,8 +5410,11 @@ existing stable `state.npc_directory.locations` key. It may include
 Do not use the old `npc_location`, `location_hint`, or a player-facing location
 name as an NPC directory key.
 
-- Objective `requires`: Do not author this legacy prerequisite array in clean
-  new stories. Graph inputs are derived from incoming output transitions.
+- Objective `requires`: Optional array of existing objective ids. Every listed
+  prerequisite is required. When the target has no explicit incoming output,
+  this list also provides its implicit incoming dependency; when explicit
+  incoming groups exist, `requires` gates those groups rather than replacing
+  them. Do not duplicate the same dependency in both forms.
 
 - Objective `next_objectives`: Optional ordered array on the objective that just
   completed. Use it for deterministic Linear/Branch outputs on Player Action
@@ -5290,7 +5427,7 @@ name as an NPC directory key.
   `fallback: true` output last when fallback behavior is needed.
 
 - Output `target_input_group_id`: Stable generated group id on every
-  nonterminal output. At the destination, incoming transitions sharing one
+  continuing output. At the destination, incoming transitions sharing one
   group id are AND requirements; different group ids are OR alternatives.
   Track the specific selected output transition, not merely completion of its
   source objective.
@@ -5305,37 +5442,32 @@ name as an NPC directory key.
   or travel arrival. Do not put future objectives, route ids, or implementation
   instructions into it.
 
-- Objective `terminal_mode`: Present only on a Finale. A main Finale uses
-  `"freeplay"`, `"ending"`, or `"game_over"` and has a non-empty
-  `ending_message`. `freeplay` closes the authored main route while leaving play
-  enabled; `ending` finishes the adventure; `game_over` finishes it as an
-  irreversible failure. A side Finale ends only its side route and does not end
-  the adventure.
-
-- Objective `end_state`: Serialize the same main Finale value expected by the
-  runtime when the editor writes it. Do not invent a second meaning that
-  conflicts with `terminal_mode`.
+- Output `ending_type`: Optional on entries in `next_objectives`, `choices`, or
+  `outcome_routes`. It must be exactly `"freeplay"`, `"ending"`, or
+  `"game_over"`. When present, omit the destination field and
+  `target_input_group_id`. `ending_title` and `ending_message` are optional text
+  on that same output. Objective-level `terminal`, `terminal_mode`, and
+  `end_state` are not approved fields.
 
 - Objective `route_control`: `"ai"` only when hidden consequences must be
-  classified from natural scene context. Omit or use `""` for normal routing.
+  classified from natural scene context. Omit it for normal routing; an empty
+  string is invalid.
 
 - Objective `outcome_routes`: Hidden array used only with
   `route_control: "ai"`. Each route has a unique stable `id`, private
   `criteria`, optional structured `requirements` used as hard eligibility
   filters, `completion_instruction`, deterministic `rewards`,
-  `next_objective_id`, and `target_input_group_id`.
-  Exactly one route has `fallback: true` or `default: true`, and that route
-  must have no requirements. Route ending outcomes through explicit Finale
-  nodes. The runtime records
+  and either `next_objective_id` plus `target_input_group_id` or `ending_type`.
+  Exactly one route has `fallback: true`, and that route
+  must have no requirements. The runtime records
   `selected_outcome_id` privately and applies base plus selected-route rewards
   once. Authors must not prefill runtime selection fields.
 
 - Objective `travel_location_id`, `travel_location_name`: Optional travel target metadata.
 
-- Objective `unlock_mode`: Do not author this legacy editor field in new
-  stories. The editor may interpret old `unlock_mode: "auto_complete"` as an
-  Automatic Transition with one all-input group, but clean output uses grouped
-  output transitions plus `requirement_check_only: true`.
+- Objective `unlock_mode` is not an approved field and causes validation
+  failure. Automatic Transitions use grouped output transitions plus
+  `completion_control: "reward_only"` and `requirement_check_only: true`.
 
 - Objective `exclusive_group`: String. Use `""` when not needed. Use a stable
   branch id on the visible owner objective for a mutually exclusive choice
@@ -5419,7 +5551,7 @@ Automatic Transition rules:
 
 - Keep it hidden from the normal objective list; it is graph infrastructure.
 - It may apply rewards, travel, or no state change at all before routing.
-- It must have a valid output or explicit terminal behavior.
+- It must have at least one valid continuing or ending output.
 - It cannot contain player choices, dialogue, AI route criteria, or a
   completion condition.
 - Do not use it to deduplicate repeated rewards; use `state.reward_bundles` or
@@ -5502,11 +5634,11 @@ duplicate reward definitions; reward-only nodes shape the graph.
   prose or the AI to freely edit them. Choice UI may show concrete visible
   resource requirements/effects such as `credits +500` or `credits >= 1200`.
 
-- Objective route integrity: Every non-Finale main objective must have a planned
+- Objective route integrity: Every main objective must have a planned
   route forward through `next_objectives`, `choices`, or `outcome_routes`, and
-  every output has a valid destination/input group. A main objective with no
-  output must explicitly continue in freeplay, end the adventure, or cause game
-  over. Do not rely on fallback objective picking as normal story flow.
+  every output has either a valid destination/input group or an `ending_type`.
+  An objective with no output is invalid. Do not rely on fallback objective
+  picking as normal story flow.
 
 - `story_shops`: Optional hidden object for story shops and job boards. Keys are
   stable shop ids. Each shop has `id`, `title`, internal `type`
@@ -5519,9 +5651,9 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
   Character shop items reference `future_cast.items[id]` with `character_id`
   and may include `price`, `purchased`, `locked`, structured `requirements`,
-  `unlock_reason`, and `on_purchase_objective`. `purchase_story`,
-  `purchase_objective`, and `purchase_story_objective` may be used by authors
-  as clearer aliases, but imported data normalizes to `on_purchase_objective`.
+  `unlock_reason`, and `on_purchase_objective`. `on_purchase_objective` is the
+  only approved field name; `purchase_story`, `purchase_objective`, and
+  `purchase_story_objective` cause validation failure.
   When a purchased or introduced future-cast character has one of these fields,
   EmberAdventures starts that objective and selects it unless a locked urgent
   objective is currently active. Do not duplicate full character definitions in
@@ -5613,8 +5745,8 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
 - Output `completion_instruction`: Narrator-only instruction used when that
   output resolves. Use it to show consequences, travel, reveals, and predefined
-  future-cast introductions. Do not use it to decide player choices. A Finale
-  may keep this at objective level because it has no output.
+  future-cast introductions. Do not use it to decide player choices. Ending
+  instructions stay on the exact ending output.
 
   Write this as a direct story instruction for this objective's immediate
   outcome. Do not paste broad boilerplate such as `Show the immediate story
@@ -5629,8 +5761,10 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
 - Forbidden objective fields: Do not use `objective`, nested `completion`,
   `steps`, `current_step_id`, `selected_step`, `selected_step_id`, authored
-  `repeatable`, or old step-based fields. Do not author legacy `requires`,
-  `unlock_mode`, or `auto_completed_from_prereqs` in clean new stories.
+  `repeatable`, or old step-based fields. `unlock_mode` and
+  `auto_completed_from_prereqs` are also invalid. Any listed field causes
+  validation failure. `requires` is the approved first-class prerequisite
+  field described above.
 
 ## state.world_flags
 
@@ -6099,9 +6233,9 @@ Use this before finalizing a story template.
 - Branching is used where it improves play: one unlock can open several paths,
   optional side objectives can branch from hubs/milestones, and multiple
   branches can be required before a later major milestone.
-- Every non-terminal main objective has an authored route forward through a
-  dependent objective, `next_objectives`, or hidden `outcome_routes`. Any main objective with no route is
-  an explicit terminal ending/death objective with deterministic ending rewards.
+- Every main objective has an authored output through `next_objectives`,
+  `choices`, or hidden `outcome_routes`. Each output either continues to another
+  objective or uses `ending_type`, with any ending rewards on that output.
   The story does not rely on fallback objective picking as normal flow.
 - Telltale-style stories include direct `completion_control: "choice"` owner
   objectives with `choices[]`, non-spoilery option titles, branch-specific
@@ -6140,7 +6274,7 @@ Use this before finalizing a story template.
   event.
 - Automatic Transitions are used only when the graph needs deterministic
   convergence, bookkeeping, state-based routing, or automatic rewards. They
-  have a valid output or terminal behavior and are not visible player
+  have a valid continuing or ending output and are not visible player
   objectives.
 - Relationship-threshold choices show locked options and visible requirements;
   options are not hidden or rewritten based on secret thresholds.
@@ -6250,6 +6384,14 @@ story, not because the skill forgot the feature exists.
 - Character relationships and personalities remain consistent with the
   original premise unless the user requests changes.
 - Clothing slots are precise item slots, not ambiguous scene-dependent descriptions.
+- Every newly authored normal, fallback, shop, reward, override, and generated
+  humanoid outfit has explicit boolean `nsfw`. Use the Character skill's outfit
+  purpose test. A SFW character has an SFW starting outfit and at least one SFW
+  outfit in both presentations. Missing flags are legacy compatibility only.
+- Keep optional adult character facts in `starting_nsfw_known_facts`, not
+  `starting_known_facts`. Loli and under-18 characters have no adult facts or
+  NSFW outfits. A SFW story may contain optional gated adult facts/outfits, but
+  its required premise, starting state, objectives, and visible path remain SFW.
 - Player-character definitions describe starting identity/tendencies without
   scripting future choices, consent, morality, dialogue, or relationship paths.
 - Public/standalone character definitions do not expose story-specific spoilers
@@ -6336,11 +6478,12 @@ asks to populate that exact field or approves exact text for it.
 - `future_cast.items` is an object.
 - Every `future_cast.items` object key matches that entry's own `id`; do not
   use numeric/index keys for future cast.
-- Every `future_cast.items[id]` shell and its `full_character`, when present,
-  satisfies the current character definition contract, including non-empty
-  `outfits`, valid `starting_outfit_id`, non-empty `fallback_outfits`, valid
-  `fallback_starting_outfit_id`, and concrete natural-form outfit entries for
-  animal/natural-body characters instead of `{}`.
+- Every `future_cast.items[id]` contains exactly one of `full_character` and
+  `animal_definition`. Humanoid shells and `full_character` values satisfy the
+  complete humanoid contract, including outfits and fallback presentation.
+  `animal_definition` values satisfy the lean animal contract and contain no
+  humanoid appearance, outfit, clothing, held-item, romance, attraction,
+  arousal, NSFW, or loli fields.
 - `world_map.locations` is an object.
 - Objective references resolve.
 - No authored objectives, story rules, memory entries, scene participants,
