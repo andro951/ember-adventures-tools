@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.49`.
+Current skill version: `1.0.51`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -744,7 +744,7 @@ Story exports use this wrapper:
         "sex_acts": []
       },
       "player": {
-        "version": 1,
+        "version": 2,
         "id": "player-character",
         "name": "Player Character Name",
         "source": "Original",
@@ -788,16 +788,17 @@ Story exports use this wrapper:
           "species": "human",
           "race": "",
           "ancestry": "",
-          "height": 5,
-          "muscular": 5,
-          "shoulders": 5,
-          "chest": 2,
-          "stomach": 5,
-          "hips": 5,
-          "waist": 5,
-          "legs": 5,
-          "arms": 5,
-          "penis_size": 0,
+          "height": 10,
+          "shoulder_width": 10,
+          "chest": 13,
+          "upper_body_build": 8,
+          "midsection_build": 8,
+          "hip_width": 10,
+          "butt_build": 8,
+          "lower_body_build": 8,
+          "arm_length": 10,
+          "leg_length": 10,
+          "penis_size": 10,
           "skin_color": "",
           "eye_color": "",
           "hair_color": "",
@@ -977,7 +978,12 @@ Story exports use this wrapper:
       "url": "",
       "hosted_url": "",
       "html": "",
-      "favorite": false
+      "favorite": false,
+      "nsfw": false,
+      "upload_attestation_classification": "",
+      "upload_attested_by": "",
+      "upload_attested_at": "",
+      "upload_attestation_policy_version": 0
     }
   },
   "exportedAt": "<actual ISO 8601 export timestamp>"
@@ -1079,6 +1085,17 @@ EmberAdventures never guesses either word from the shop title, subtype, or other
 prose. It may set `post_purchase_presence` to
 `"current_scene"` (the default) or `"roster"`; use `"roster"` only when the
 character should be owned but should not physically enter the current scene.
+
+Service listings must also define `purchase_opening` with a non-empty authored
+`dialogue` string. This is the character's immediate, deterministic greeting
+after the player pays or books the service. It may also include an optional
+`guidance` string, hidden from the player, that tells the next AI scene reply
+how the character should acknowledge the payment and begin the service. Keep
+the greeting short and in the character's voice; put scene movement or
+additional action in `guidance` rather than making the authored line narrate
+the whole encounter. Acquisition listings do not require this field because
+they add the character to the party instead of starting a booked service
+scene.
 
 Character shops support two purchase behaviors through `purchase_mode`:
 
@@ -2155,16 +2172,20 @@ Before finishing:
 - `appearance.extra_description` is the general extra durable visual-detail field.
   Use it for unusual upper-body anatomy, scars, markings, species details, or
   visual facts that no specific appearance field can express. Do not repeat body
-  size/shape/proportion already represented by `height`, `muscular`,
-  `shoulders`, `chest`, `stomach`, `hips`, `waist`, `legs`, `arms`, hair, skin,
-  or eyes. Bad examples: `thin adult body`, `large breasts`, `wide hips`,
+  size/shape/proportion already represented by `height`, `shoulder_width`,
+  `chest`, `upper_body_build`, `midsection_build`, `hip_width`, `butt_build`,
+  `lower_body_build`, `arm_length`, `leg_length`, `penis_size`, hair, skin, or
+  eyes. Bad examples: `thin adult body`, `large breasts`, `wide hips`,
   `defined abs`, or `long legs` when those are already encoded by numeric/body
   fields.
-- Set `appearance.nonhuman_lower_body` to true only when normal humanoid hips
-  and legs are replaced by a distinct nonhuman lower body. Then describe that
-  replacement concretely in `appearance.extra_description_lower_body`; do not
-  repeat numeric hips or legs there. Keep every clothing slot the character
-  actually wears. Profile prompts omit this lower-body description, while
+- Set `appearance.nonhuman_lower_body` to true only when ordinary humanoid hips,
+  buttocks, thighs/calves, and legs are replaced by a distinct nonhuman lower
+  body. Keep all eleven numeric fields structurally present, but suppress
+  `hip_width`, `butt_build`, `lower_body_build`, and `leg_length` from prompt
+  projection when they do not apply. Describe the complete replacement in
+  `appearance.extra_description_lower_body`; do not invent ordinary legs or
+  glutes. Keep every clothing slot the character actually wears. Profile prompts
+  omit this lower-body description, while
   lower-body-capable normal and group prompts include it.
 - When `appearance.nonhuman_lower_body` is false,
   `appearance.extra_description_lower_body` may still contain a concrete visual
@@ -2901,8 +2922,8 @@ For guided story:
 For time-controlled stories:
 
 - Put main story events in `story_pacing.timeline`.
-- Make every main story objective before final aftermath/freeplay
-  `time_locked` and `locked_until_complete`.
+- Make every main story objective before final aftermath/freeplay use
+  `locked_until_complete: true`.
 - Create downtime by spacing scheduled events or objective-triggered future
   events. This is the normal recommended form of time-controlled pacing because
   it lets players explore, shop, do jobs, rest, and pursue side objectives
@@ -3549,7 +3570,7 @@ Permanent state/body/relationship changes:
 {
   "type": "set_state_field",
   "target": "Character Name",
-  "field_path": ["appearance", "arms"],
+  "field_path": ["appearance", "extra_description"],
   "value": "left arm intact and strong; right arm rebuilt as a matching synthetic combat arm"
 }
 ```
@@ -4718,7 +4739,7 @@ verbatim copy of Codex process instructions.
   are not extra printed text. Do not include spoilers or future cast that is not
   visible at the start.
 
-- `title_card_image`: Optional default story title-card image slot. This is the active/default image reference for the story card, not story image history. Its clean normal-story shape uses `id`, `title`, `prompt`, `negativePrompt`, `seed`, `model`, `source`, `url`, `hosted_url`, `html`, and `favorite`. It does not use `negative_prompt` or `note`. Public story publishing requires a hosted/default image URL. Local title-card image history is stored outside the story definition and should survive story deletion/reimport. Generated title-card prompts should describe only the background/cover art and must not ask the image generator to print the story title, logo, lettering, typography, subtitles, taglines, author names, captions, menu text, UI text, random letters, or character names as text. EmberAdventures overlays the story title itself. Keep `negativePrompt` blank in normal story templates.
+- `title_card_image`: Optional default story title-card image slot. This is the active/default image reference for the story card, not story image history. Its clean normal-story shape uses `id`, `title`, `prompt`, `negativePrompt`, `seed`, `model`, `source`, `url`, `hosted_url`, `html`, `favorite`, and `nsfw`. User-uploaded slots additionally retain `upload_attestation_classification`, `upload_attested_by`, `upload_attested_at`, and `upload_attestation_policy_version`; generated images leave those fields blank/default. It does not use `negative_prompt` or `note`. Public story publishing requires a hosted/default image URL. Local title-card image history is stored outside the story definition and should survive story deletion/reimport. Generated title-card prompts should describe only the background/cover art and must not ask the image generator to print the story title, logo, lettering, typography, subtitles, taglines, author names, captions, menu text, UI text, random letters, or character names as text. EmberAdventures overlays the story title itself. Keep `negativePrompt` blank in normal story templates.
 
 - `default_image_model`: Optional story-level default image style id for normal generated story images and AI-created characters/NPCs created inside games that use this story. Use `""` by default. Supported ids include app image-style preset ids such as `"fantasy-rpg"` for the default cinematic fantasy look and `"polished-animation"` for the newer polished high-budget animated fantasy look. Set this only when the story creator intentionally wants the whole story to default to that image style; otherwise leave it blank so the player's global image style is used. If nonblank, also copy the value to `state.meta.default_image_model`.
 
@@ -5092,7 +5113,7 @@ and the story intentionally requires Character Library selection.
   character whose `gender` is not futa or futanari.
 
 - `appearance.penis_size` is required on every player and non-player character
-  definition and must be an intentional integer from 0 to 10. This includes
+  definition and must be an intentional integer from 0 to 20. This includes
   female, non-binary, futanari, male, non-romanceable, and other characters.
   Runtime ignores it unless the current presentation is male or futanari, but
   the field must already exist because runtime adaptation can change presentation.
@@ -5481,8 +5502,8 @@ name as an NPC directory key.
   use `true` only for urgent time-sensitive active objectives that must be
   finished before the player can switch to side objectives or clear the current
   objective. In `time_controlled` stories, every main story objective that can
-  become active before final aftermath/freeplay should be `time_locked` and
-  locked until complete. Timed events may start a locked objective when a
+  become active before final aftermath/freeplay should use
+  `locked_until_complete: true`. Timed events may start a locked objective when a
   deadline, attack, collapse, arrest, rescue window, battle for a city, scheduled
   meeting, political session, relationship set-piece, or other authored main
   event arrives.
@@ -5761,10 +5782,10 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
 - Forbidden objective fields: Do not use `objective`, nested `completion`,
   `steps`, `current_step_id`, `selected_step`, `selected_step_id`, authored
-  `repeatable`, or old step-based fields. `unlock_mode` and
-  `auto_completed_from_prereqs` are also invalid. Any listed field causes
-  validation failure. `requires` is the approved first-class prerequisite
-  field described above.
+  `repeatable`, or old step-based fields. `unlock_mode`,
+  `objective_mode`, `timeline_event_id`, and `auto_completed_from_prereqs` are
+  also invalid. Any listed field causes validation failure. `requires` is the
+  approved first-class prerequisite field described above.
 
 ## state.world_flags
 
@@ -5863,9 +5884,10 @@ duplicate reward definitions; reward-only nodes shape the graph.
 
 - In `time_controlled` stories, every main story objective that can become
   active before the final aftermath/freeplay phase should use
-  `"objective_mode": "time_locked"` and `"locked_until_complete": true`.
-  A time-locked objective cannot be deselected or replaced by side content until
-  it completes.
+  `"locked_until_complete": true`. The timeline event controls when the
+  objective starts; do not add `objective_mode` or `timeline_event_id` to the
+  objective. A locked objective cannot be deselected or replaced by side
+  content until it completes.
 
 - Free time belongs between locked main objectives, not inside them. Create
   downtime by spacing timeline triggers, using objective-triggered future
@@ -6100,6 +6122,27 @@ current field is `starting_party_member_count`, not
 player-specific `last_played`, live save data, or local-only image ids.
 
 ## Story Image Rules
+
+- User image uploads are allowed only for the story title card. Never upload a
+  player, party, NPC, future-cast, or other character profile image. Character
+  portraits must be generated from the structured character definition.
+- Story title-card generation follows the story's `nsfw` classification.
+  Character profile generation follows the character classification, or the
+  exact prompt outfit classification when the character is SFW. Normal scene
+  and event images generated during play follow the runtime session mode.
+- Generated image classification is immutable. Never relabel an image generated
+  in NSFW mode as SFW. An uploaded title card may be declared SFW only through
+  EmberAdventures' uploader attestation. That record includes uploader id,
+  classification, timestamp, and policy version.
+- A SFW story cannot be publicly published while any selected title, character
+  profile, authored reward, unlock, or other story image is NSFW or unclassified.
+  If any embedded character is inherently NSFW, import upgrades the whole story
+  to NSFW and publishing offers the same local upgrade or aborts before network
+  activity.
+- Downgrading a story to SFW performs structural and character checks first.
+  It then asks for the uploaded title-card attestation when needed. Generated
+  NSFW title images and selected NSFW character profile images are deselected;
+  they are never reclassified.
 
 - Every authored story image must support a real hosted URL. Use a portable
   nested slot for ordinary story assets:
@@ -6376,6 +6419,19 @@ story, not because the skill forgot the feature exists.
 - Invented characters come from `EmberAdventures Character`. If canon
   characters are required, keep this base story skill active and also load
   `Source EmberAdventures Story` plus `Source EmberAdventures Character`.
+- Standalone and story-embedded humanoid character definitions use the same
+  body-scale schema. Every embedded full character definition, including player
+  options, active characters, inspected NPC `full_character`, and future-cast
+  `full_character`, contains exactly `height`, `shoulder_width`, `chest`, `upper_body_build`,
+  `midsection_build`, `hip_width`, `butt_build`, `lower_body_build`,
+  `arm_length`, `leg_length`, and `penis_size`, each as an integer from 0 through
+  20. Legacy appearance keys `muscular`, `shoulders`, `stomach`, `hips`, `waist`,
+  `legs`, and `arms` are invalid in both standalone and embedded definitions.
+  Clothing slots with names such as `shoulders` and `waist` remain valid.
+- Apply the base Character skill's `nonhuman_lower_body` contract unchanged in
+  stories. Keep all eleven numbers structurally present, preserve complete
+  replacement anatomy in `extra_description_lower_body`, and suppress only the
+  four inapplicable lower-body traits during prompt projection.
 - Future cast entries have full payloads when they will become active later.
 - Embedded player, party, NPC, and future-cast definitions are built to support
   play. Durable facts include how the character affects objectives, what they
@@ -6387,7 +6443,8 @@ story, not because the skill forgot the feature exists.
 - Every newly authored normal, fallback, shop, reward, override, and generated
   humanoid outfit has explicit boolean `nsfw`. Use the Character skill's outfit
   purpose test. A SFW character has an SFW starting outfit and at least one SFW
-  outfit in both presentations. Missing flags are legacy compatibility only.
+  outfit in both presentations. Missing outfit classification is a hard import
+  error and must never be inferred from the character or story.
 - Keep optional adult character facts in `starting_nsfw_known_facts`, not
   `starting_known_facts`. Loli and under-18 characters have no adult facts or
   NSFW outfits. A SFW story may contain optional gated adult facts/outfits, but
