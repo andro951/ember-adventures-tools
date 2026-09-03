@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.51`.
+Current skill version: `1.0.52`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -744,7 +744,7 @@ Story exports use this wrapper:
         "sex_acts": []
       },
       "player": {
-        "version": 2,
+        "version": 1,
         "id": "player-character",
         "name": "Player Character Name",
         "source": "Original",

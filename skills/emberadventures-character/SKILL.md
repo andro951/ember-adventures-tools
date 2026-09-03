@@ -11,7 +11,7 @@ This skill is for only character information. Do not mention anything that is on
 
 ## Version and Update Check
 
-Current skill version: `1.0.28`.
+Current skill version: `1.0.29`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to
@@ -108,7 +108,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
 ```json
 {
   "character_definition": {
-    "version": 2,
+    "version": 1,
     "id": "character-name",
     "name": "Character Name",
     "source": "Original",
@@ -371,8 +371,7 @@ inventory, and durable facts.
 
 #### Field Rules
 
-- `version`: Character definition schema version. Set to `2` for every new or migrated humanoid character using the 0-20 appearance scales. Version `1` uses the retired body schema and is invalid for these definitions.
-Increment when making changes.
+- `version`: Positive whole-number character definition version. Start new characters at `1` and increment it when making changes. The version number does not select the appearance schema; every character must contain the exact current required fields, including the 0-20 appearance fields, regardless of version.
 
 - `id`: Stable character id string. Use a readable slug such as `"akane-fujimori"` or `"character-akane-fujimori"` according to the local file/library convention. Do not use random garbage when a readable stable id can be created from the character name.
 
