@@ -11,7 +11,7 @@ This skill is for only character information. Do not mention anything that is on
 
 ## Version and Update Check
 
-Current skill version: `1.0.29`.
+Current skill version: `1.0.30`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to
@@ -114,6 +114,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "source": "Original",
     "creation_tool": "<Tool> <Model Number> (<Reasoning or Intelligence Level>)",
     "catalog_hook": "A concise, spoiler-free reason to start a game with this character.",
+    "default_image_background": "a candlelit apothecary lined with dried herbs and glass bottles",
     "genres": ["fantasy"],
     "kink_tags": ["optional searchable kink tag"],
     "nsfw": false,
@@ -332,6 +333,7 @@ shells and `full_character` definitions, and future-cast shells and
 `full_character` definitions:
 
 - `catalog_hook`
+- `default_image_background`
 - `genres`
 - `kink_tags`
 - `chat_story`
@@ -777,6 +779,18 @@ Outfits are immutable clothing presets stored on the character definition. When 
   `chat_story_template.description`. Use `""` when no distinct hook is needed.
   A SFW character's hook must itself be SFW. Omit it from every story-embedded
   character definition.
+
+- `default_image_background`: Optional standalone-character image-setting
+  guidance. When present, use a trimmed, nonempty string describing only the
+  environment or background that normally suits this character, such as
+  `"a candlelit apothecary lined with dried herbs and glass bottles"`. Do not
+  put pose, camera, action, anatomy, clothing, or character-description prose
+  in this field. EmberAdventures may use it for profile images and other solo
+  standalone-character images when no story, scene, location, or explicit user
+  setting is authoritative. It never overrides an explicit setting and does
+  not apply to multi-character scene images. Omit the field when the normal
+  genre-derived/default background is preferable; do not emit a blank string.
+  Omit it from every story-embedded character definition.
 
 #### Standalone Character Chat Scenario
 
@@ -1704,7 +1718,11 @@ this checklist. Do not call an entry finished until all checks pass:
     characters have no NSFW facts or outfits.
 16. `catalog_hook` is a string containing an accurate, spoiler-free standalone
     catalog pitch, or `""`. It is omitted from story-embedded characters.
-17. Optional Chat scenario fields use their exact shapes: `chat_story` and
+17. `default_image_background`, when present, is a trimmed nonempty string that
+    describes only a suitable environment for solo standalone-character images.
+    It is omitted rather than blank when unused, never overrides an explicit
+    story/scene/location/user setting, and is omitted from story-embedded characters.
+18. Optional Chat scenario fields use their exact shapes: `chat_story` and
     `chat_opening_message` are strings; `chat_starting_location` contains only
     `label`, `place`, and `activity`, which are either all nonblank or all blank.
     The opening never controls the player, the scenario is safe for player inspection,

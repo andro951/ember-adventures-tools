@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.52`.
+Current skill version: `1.0.53`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -649,6 +649,7 @@ When creating, importing, or adapting a standalone character for a story, omit
 all standalone discovery and launcher fields from every embedded copy:
 
 - `catalog_hook`
+- `default_image_background`
 - `genres`
 - `kink_tags`
 - `chat_story`
@@ -5035,7 +5036,7 @@ and the story intentionally requires Character Library selection.
   adapted by `romanceable` or swap-all.
 
 - Story-embedded character definitions inherit discovery metadata from the
-  story. Omit `catalog_hook`, `genres`, `kink_tags`, `chat_story`,
+  story. Omit `catalog_hook`, `default_image_background`, `genres`, `kink_tags`, `chat_story`,
   `chat_opening_message`, `chat_starting_location`, and `chat_story_template`
   from `state.player`, every `state.players[]` option, `state.characters`, NPC
   shells and `full_character` definitions, and every
