@@ -185,7 +185,7 @@ V-shaped composition scale: 0 fat-volume extreme → 10 emaciated extreme → 20
 
 ## Midsection Build
 
-V-shaped composition scale. Fat side uses belly projection and overhang landmarks; muscular side uses ab-count and measured relief.
+V-shaped composition scale. Fat side uses belly projection and overhang landmarks; lean and muscular values use abdominal definition, muscle development, and visible torso landmarks.
 
 | Value | Image-prompt phrase |
 |---:|---|
@@ -199,17 +199,17 @@ V-shaped composition scale. Fat side uses belly projection and overhang landmark
 | 7 | fat/soft midsection: front abdominal projection about **0.55 head-lengths** beyond the ribcage line; rounded soft belly without a heavy overhang |
 | 8 | fat/soft midsection: front abdominal projection about **0.3 head-lengths** beyond the ribcage line; average-soft abdomen with mild natural fullness |
 | 9 | fat/soft midsection: front abdominal projection about **0.12 head-lengths** beyond the ribcage line; very thin nearly flat abdomen with very little body fat |
-| 10 | absurd emaciated extreme: deeply sunken abdomen with virtually no fat or abdominal muscle, recessed about **0.15 head-length** inside the ribcage/hip line |
-| 11 | extremely lean flat abdomen with only faint natural abdominal lines and essentially no raised muscle blocks; abdominal muscle relief projects about **0 head-lengths** forward from the abdominal plane |
-| 12 | lean flat abdomen with a faint **2-pack** and only slight upper-ab relief; abdominal muscle relief projects about **0.05 head-lengths** forward from the abdominal plane |
-| 13 | fit abdomen with a clear **2-pack** and light oblique definition; abdominal muscle relief projects about **0.1 head-lengths** forward from the abdominal plane |
-| 14 | athletic abdomen with a clear **4-pack** and visible obliques; abdominal muscle relief projects about **0.15 head-lengths** forward from the abdominal plane |
-| 15 | muscular abdomen with a distinct **6-pack** and strong oblique definition; abdominal muscle relief projects about **0.2 head-lengths** forward from the abdominal plane |
-| 16 | very muscular abdomen with a deep raised **6-pack**, thick blocks, and pronounced grooves; abdominal muscle relief projects about **0.3 head-lengths** forward from the abdominal plane |
-| 17 | bodybuilder abdomen with a highly visible **8-pack**, deeply separated blocks, and prominent obliques; abdominal muscle relief projects about **0.4 head-lengths** forward from the abdominal plane |
-| 18 | extreme bodybuilder abdomen with a thick raised **8-pack** and heavily hypertrophied blocks; abdominal muscle relief projects about **0.55 head-lengths** forward from the abdominal plane |
-| 19 | hyper-muscular fantasy abdomen with oversized multi-row abdominal blocks and massive obliques; abdominal muscle relief projects about **0.8 head-lengths** forward from the abdominal plane |
-| 20 | absurd extreme-fantasy abdomen with gigantic protruding multi-row abdominal blocks and impossible segmentation; abdominal muscle relief projects about **1.1 head-lengths** forward from the abdominal plane |
+| 10 | absurd emaciated extreme: deeply sunken abdomen with virtually no fat or abdominal muscle, hollowed through the stomach, with faint ribs and minimal side definition |
+| 11 | extremely lean flat abdomen with barely visible natural abdominal lines, a light central groove, very faint upper-ab structure, and minimal oblique definition |
+| 12 | lean flat abdomen with a faint **2-pack**, a subtle central groove, slight upper-ab definition, and light natural oblique lines |
+| 13 | fit flat abdomen with a clear **2-pack**, light horizontal separations, a visible central groove, gentle oblique definition, and the beginning of a subtle V-cut |
+| 14 | athletic tight abdomen with a clear **4-pack**, visible obliques, a defined central groove, moderate horizontal separations, and a noticeable V-cut / Adonis belt |
+| 15 | muscular tight abdomen with a distinct **6-pack**, strong obliques, clear horizontal and central grooves, a pronounced V-cut / Adonis belt, and light serratus definition beneath the ribs |
+| 16 | very muscular abdomen with a deep **6-pack**, thick sharply sculpted ab blocks, pronounced obliques, visible serratus muscles beneath the ribs, and a deep clearly carved V-cut |
+| 17 | bodybuilder abdomen with a highly visible **8-pack**, thick rounded ab blocks, deep central and horizontal grooves, prominent obliques, strong saw-toothed serratus definition, and a sharply defined V-cut |
+| 18 | extreme bodybuilder abdomen with a thick sharply defined **8-pack**, very deep abdominal segmentation, heavily developed obliques, pronounced serratus, a very deep V-cut / Adonis belt, and unusually bulky abdominal musculature |
+| 19 | hyper-muscular fantasy abdomen with an exaggerated **10-pack** formed by five clear rows of paired ab blocks, each block thick, dense, and sharply sculpted, with extremely deep grooves, colossal obliques, exaggerated serratus, and an extreme carved V-cut |
+| 20 | absurd extreme-fantasy abdominal musculature with an impossible **12-pack** formed by exactly six clearly visible horizontal rows of paired rectus-abdominis blocks, with no additional central ab rows; each row is thick, dense, rounded, and sharply sculpted, with extremely deep central and horizontal grooves; the lateral abdominal musculature follows the same overall row rhythm through thick diagonally angled oblique ridges that wrap outward from the central abs; exaggerated serratus muscles form sharp saw-toothed diagonal bands beneath the ribs and interlock visually with the upper abdominal rows; colossal external obliques create layered angled side-ab definition through the lower torso; an extremely deep sharply carved V-cut / Adonis belt frames the lower abdomen; the entire midsection has substantially more abdominal segmentation and muscle mass than anatomically possible |
 
 ## Lower-body Build
 
