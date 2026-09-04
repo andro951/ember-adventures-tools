@@ -1887,6 +1887,18 @@ relationship, location, or other state requirements into graph inputs.
   prompt. It does not equip the outfit, change active clothing, or mutate the
   character. Use a separate `equip_outfit` reward when the clothing should
   actually change in runtime state.
+- `generate_solo_normal_image` may also include optional string fields
+  `description` and `background`. `description` is appended as additional
+  appearance and outfit guidance for the generated solo image. When it is
+  non-empty, the runtime uses a character-only full-body composition and
+  excludes the character's scene-derived pose, expression, state of mind,
+  physical state, held items, sex position, scene action, and normal
+  location/default background. Do not put scene direction, actions, poses,
+  locations, or sex-position instructions in this field; use it only for what
+  the character looks like and what clothing/outfit to show. `background`,
+  when non-empty, explicitly replaces the normal location/background. It may
+  be supplied with `description` when a deliberate background is wanted. A
+  blank optional field is equivalent to omitting it.
 - Use `generate_story_image` for authored non-character images that strengthen
   the story: important objects, locked doors, clues, symbols, maps, memory
   objects, locations, horror reveals, jump scares, ritual scenes, and other
@@ -6180,6 +6192,10 @@ player-specific `last_played`, live save data, or local-only image ids.
   must have either a real image reference or a prompt. Hosted story-image
   rewards may omit the prompt, though useful prompt/provenance metadata is
   encouraged.
+- A generated `generate_solo_normal_image` reward may additionally carry
+  optional top-level `description` and `background` strings as documented in
+  the Rewards section. These fields affect only generated solo images; a real
+  nested hosted `image` is used directly and does not invoke the generator.
 - `title_card_image` and character `profile_image_presentations` remain their
   specialized schemas documented elsewhere. They still require real hosted
   URLs for public upload; do not replace those fields with the generic nested
