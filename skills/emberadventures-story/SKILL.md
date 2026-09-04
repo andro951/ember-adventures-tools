@@ -5,7 +5,7 @@ description: Create, update, migrate, validate, or review normal EmberAdventures
 
 ## Version and Update Check
 
-Current skill version: `1.0.53`.
+Current skill version: `1.0.54`.
 
 For ordinary story creation, review, repair, or migration, use the installed
 skill text as the active instructions. Do not interrupt the creator workflow to
@@ -491,7 +491,7 @@ with rollback and choice support.
     For stories with dozens or hundreds of purchasable/talkable shop
     characters, use large-shop-stock mode: major/fixed story companions still
     need full depth, while stock characters should be compact but playable and
-    distinct. Each stock character still needs a real name, species/race, role,
+    distinct. Each stock character still needs a real name, species/variant, role,
     appearance, outfit, personality, speech style, durable facts, intended shop
     placement, unlock requirement when relevant, and a post-purchase or
     post-introduction hook. Do not make stock characters anonymous,
@@ -787,8 +787,6 @@ Story exports use this wrapper:
         "starting_pose": "standing at the starting place",
         "appearance": {
           "species": "human",
-          "race": "",
-          "ancestry": "",
           "height": 10,
           "shoulder_width": 10,
           "chest": 13,
@@ -1146,7 +1144,7 @@ Scale depth to importance rather than reducing people to placeholders:
 - major or fixed companions and important owners usually need 6-10 concrete
   durable facts;
 - ordinary purchasable or talkable stock characters usually need 3-5 concrete
-  durable facts plus a specific role, species or race, appearance, outfit,
+  durable facts plus a specific role, species/variant, appearance, outfit,
   personality, speech style, intended stock placement, any known unlock
   requirement, and a post-purchase or post-introduction hook;
 - generated job-role NPCs may be shorter, but still need a proper name, concrete
@@ -4524,6 +4522,14 @@ Rules:
 # EmberAdventures Story Definition Field Contract
 
 Use this contract when creating, reviewing, or migrating EmberAdventures story-template JSON. This contract describes the immutable/default parts of the current story-template format. It does not introduce a new reference system. Use the current EmberAdventures story method: player is a player object, party members are keyed by character name in the saved `state.characters` object, NPCs/future cast use the current story-template structures, and scene/runtime lists use names after import.
+
+Story-embedded character definitions use the same single `appearance.species`
+field as standalone characters. Put the complete identity in that field,
+including meaningful subtypes, groups, visual qualifiers, or lineage such as
+`"Cosmic Ghost"` or `"Iron Coast Dwarf"`. Do not add `appearance.race` or
+`appearance.ancestry`; those fields are invalid and removed. The rest of this
+story contract governs which character fields are allowed in each story
+location.
 
 ## Field Purpose Standard
 

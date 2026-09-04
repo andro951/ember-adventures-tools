@@ -11,7 +11,7 @@ This skill is for only character information. Do not mention anything that is on
 
 ## Version and Update Check
 
-Current skill version: `1.0.30`.
+Current skill version: `1.0.31`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to
@@ -173,9 +173,7 @@ only. Replace them with real ISO 8601 timestamps in every final file.
     "starting_physical_state": "",
     "starting_pose": "",
     "appearance": {
-      "species": "human",
-      "race": "specific appearance/race/ethnicity descriptor",
-      "ancestry": "optional lineage/heritage descriptor",
+      "species": "complete species identity, including meaningful subtype or qualifier",
       "height": 10,
       "shoulder_width": 10,
       "chest": 13,
@@ -666,11 +664,7 @@ information that the prompt builder will already include elsewhere.
 
 `appearance` describes the body and persistent visual traits only. Do not put clothing, current pose, current mood, relationship, inventory, or sexual behavior here.
 
-- `species`: Biological/species label. Examples: `"human"`, `"slime"`, `"elf"`, `"demon"`, `"arachne"`. Do not include gender information in `species`.
-
-- `race`: Specific human race/ethnicity/visual ancestry when applicable, or a species subtype if useful. Follow `species_and_race.human_race_detail_preference`: specify, vary, infer, omit, or ask as recorded instead of forcing ethnicity into every human definition. Examples when specificity is wanted: `"Black"`, `"East Asian"`; `species` and `race` can feel a lot like the same thing. When unsertain, you can put either information into `species`, and `race` can be blank. Never have duplicate information between `species` and `race`.
-
-- `ancestry`: Optional lineage/heritage detail distinct from race/species. Examples: `"half-demon bloodline"`, `"old noble family"`, `""`. Likely to be empty for most characters unless ancestry is a large part of the character's identity. Don't ever indluce information from `species` or `race` in `ancestry`.
+- `species`: The complete concise species identity. Include the base species and every meaningful subtype, subgroup, visual qualifier, or heritage descriptor needed to identify the character, in one field. Examples: `"human"`, `"Black human"`, `"High Elf"`, `"Iron Coast Dwarf"`, and `"Cosmic Ghost"`. Character definitions have no separate race or ancestry fields; do not split one identity across multiple fields. Do not include gender in `species`.
 
 - The body-scale portion of `appearance` contains exactly `height`, `shoulder_width`, `chest`, `upper_body_build`, `midsection_build`, `hip_width`, `butt_build`, `lower_body_build`, `arm_length`, `leg_length`, and `penis_size`. Every field is required and every value is an integer from 0 to 20. Do not author body-scale strings. `chest` uses the presentation-specific male or non-male mapping; the other ten fields use one mapping for every presentation. Read [references/body-scales-0-20.md](references/body-scales-0-20.md) before selecting or validating body values.
 
@@ -700,7 +694,7 @@ When writing `extra_description`:
 - Compare each `extra_description` phrase against every specific appearance field.
 - Remove or rewrite phrases that duplicate numeric body fields, including breast size, bust silhouette, abs/stomach definition, shoulder width, arm muscle, hip width, leg length, height, and overall muscularity.
 - Remove or rewrite phrases that duplicate skin, eye, hair, or notable-feature fields.
-- Remove filler phrases such as `Attractive adult [race/species] with a distinctive silhouette`, `expressive face`, `design cues tied to her work as...`, or `[race/species] traits shaped around...`. These are not concrete visual traits and usually duplicate `race`, `role`, or personality.
+- Remove filler phrases such as `Attractive adult [species] with a distinctive silhouette`, `expressive face`, `design cues tied to her work as...`, or `[species] traits shaped around...`. These are not concrete visual traits and usually duplicate `species`, `role`, or personality.
 - Do not write narrative prose using the character's name or pronouns. Do not explain traits with phrases such as `built from years of carrying armor`, `giving her an athletic silhouette`, or `showing the life of a veteran`. Record only the visible result when it is not represented elsewhere.
 - Prefer a compact comma-separated list or one short sentence. Length is not a substitute for specificity.
 - Keep genuinely additional integrated traits, species anatomy, scars/features not listed elsewhere, unusual proportions that are not represented by one numeric field, or source-faithful visual notes that cannot fit a specific field.
@@ -1489,14 +1483,14 @@ Before final export, verify that saved `creation_tool` metadata describes the cu
 ## Character Design Goals
 
 - Make characters interesting, distinct, and suited to the user's current request.
-- Make batches diverse in race/species, profession, personality, boldness, silhouette, outfit, and tone unless preferences request a narrower set.
+- Make batches diverse in species/variant, profession, personality, boldness, silhouette, outfit, and tone unless preferences request a narrower set.
 - Include mismatch/subversion only when preferences or the prompt support it.
 - Avoid making every character a generic archetype.
 - Avoid making every character overpowered unless preferences or the current request support it.
 - Use the user's job/concept preferences from the preference file.
 - Follow `jobs_and_concepts.role_style_preference` and the current request when deciding whether a role should be ordinary, fantastical, setting-grounded, origin-driven, or varied. Do not hardcode one style for all users.
 - If the user rejects a role or concept, use their explanation to revise the relevant preference instead of assuming every rejection means the role was too ordinary or job-like.
-- Follow `species_and_race.human_race_detail_preference`. Use a specific race/ethnicity/visual ancestry when that preference requests it; otherwise infer, vary, omit, or ask as recorded.
+- Follow `species_and_race.human_race_detail_preference`. When that preference requests human ethnicity/visual ancestry, include the resulting qualifier in the single `species` value; otherwise infer, vary, omit, or ask as recorded.
 
 ## Existing Characters
 
@@ -1513,7 +1507,7 @@ For uniqueness checks, scan current and relevant existing characters for repeate
 - relationship wording
 - names and name patterns
 - jobs/concepts
-- species/race mix
+- species/variant mix
 - outfits
 
 ## Names
@@ -1537,11 +1531,11 @@ When proposing original character options before final JSON, follow
 `proposal_preferences`. If it is unanswered, use this compact neutral fallback:
 
 ```text
-Name (race)
+Name (species/variant)
 Description.
 ```
 
-Include the race/species parenthetical only when the saved preference requests it or when it materially helps compare concepts. For humans, obey `human_race_detail_preference` rather than always forcing an ethnicity into the proposal.
+Include the species/variant parenthetical only when the saved preference requests it or when it materially helps compare concepts. For humans, obey `human_race_detail_preference` rather than always forcing an ethnicity into the proposal.
 
 ## Personality
 
@@ -1569,12 +1563,12 @@ for producing clean image prompts and should not introduce alternate field shape
   sentence covering rhythm, formality, bluntness, warmth, guardedness, profanity,
   humor, flirtation, or similar dialogue behavior. Do not put current emotions,
   story instructions, TTS/voice metadata, or visual traits in it.
-- `species`, `race`, and `ancestry` own biological/source identity only.
+- `species` owns the complete biological/source identity, including meaningful subtype, subgroup, ethnicity, or lineage qualifiers. Do not create `race` or `ancestry` fields.
 - `skin_color`, `eye_color`, `hair_color`, `hair_length`, and `hair_type` own
   only those exact traits.
 - `extra_description` owns concrete durable visual traits that do not fit another specific appearance field, including horns, claws, fangs, ordinary tails, wings, extra eyes, unusual ears, nonhuman hands, tattoos, scars, birthmarks, body paint, facial markings, body markings, or a concise species trait that cannot be expressed by one numeric field. Replacement nonhuman lower-body anatomy belongs in `extra_description_lower_body`, not here. It is a remainder field, not a second full-body description.
 - Do not duplicate specific appearance fields inside `appearance.extra_description`. The game converts the eleven numeric body fields plus hair, eyes, and skin into image-prompt text. Remove duplicated height, shoulder width, chest size, upper-body build, abdominal build, hip width, butt/glute build, thigh/calf build, arm length, leg length, penis size, hair, skin, and eyes. After final assembly, clean both remainder fields again; if nothing unique remains, use `""`.
-- Do not use filler `extra_description` prose such as `Attractive adult [race/species] with a distinctive silhouette`, `expressive face`, `design cues tied to her work as...`, or `[race/species] traits shaped around...`. Those phrases are not concrete visual traits and usually duplicate `race`, `role`, body fields, or personality. Write only specific durable visuals that the other fields cannot express, such as scars, tattoos, horns, tails, wings, markings, ports, unusual anatomy, or similar.
+- Do not use filler `extra_description` prose such as `Attractive adult [species] with a distinctive silhouette`, `expressive face`, `design cues tied to her work as...`, or `[species] traits shaped around...`. Those phrases are not concrete visual traits and usually duplicate `species`, `role`, body fields, or personality. Write only specific durable visuals that the other fields cannot express, such as scars, tattoos, horns, tails, wings, markings, ports, unusual anatomy, or similar.
 - Do not paste prose-first body-design notes into `extra_description`, mention the character by name, use narrative pronouns, describe posture or current state, or explain a visual trait through profession/history. Prefer a compact list of visible leftovers. Before export, preview the fully assembled image prompt and reject `extra_description` if it repeats structured prompt phrases or reads like a character-sheet paragraph.
 - For exaggerated features, use direct graphic description language when needed for accurate image output.
 - Manual characters may use the full valid 0-20 range when appropriate.
@@ -1582,7 +1576,7 @@ for producing clean image prompts and should not introduce alternate field shape
 - For clothed characters, use the normal female chest phrase and append `fully covered by the described clothing` when structured upper-body clothing is present. Do not invent a separate clothed scale.
 - If the user supplies a concrete anchor such as "8 equals full watermelon-sized per breast", use it to calibrate and select the numeric value `8`. Keep the final mapped body field numeric. Put genuinely additional unmapped anatomy in `extra_description`; do not repeat the mapped trait there.
 - If the user prefers impossible anatomy, state it directly and visually, e.g. "more visible ab blocks than realistic human anatomy", rather than just "defined abs".
-- Keep species/race anatomy consistent and visually useful.
+- Keep species/variant anatomy consistent and visually useful.
 
 ### Image Prompt Projection Contract
 
@@ -1742,7 +1736,7 @@ When asked to maintain an original character library, support:
 - repetitive phrasing cleanup
 - source/creation_tool/genres/nsfw/loli/can_die backfill
 - style consistency
-- race/species balance review
+- species/variant balance review
 - relationship/default-state consistency
 - moving rejected entries aside without deleting unless asked
 
@@ -1765,7 +1759,7 @@ For large-shop-stock mode, distinguish depth tiers:
   depth, usually 6-10 concrete durable facts;
 - ordinary purchasable/talkable stock characters should be compact but
   playable, usually 3-5 concrete durable facts plus a specific role, species or
-  race, appearance, outfit, personality, speech style, intended shop/stock
+  species/variant, appearance, outfit, personality, speech style, intended shop/stock
   category, unlock requirement when known, and a post-purchase or
   post-introduction hook;
 - generated job-role NPCs such as recurring bakers, clerks, witnesses, or
