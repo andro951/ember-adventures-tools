@@ -2189,6 +2189,15 @@ Before finishing:
   eyes. Bad examples: `thin adult body`, `large breasts`, `wide hips`,
   `defined abs`, or `long legs` when those are already encoded by numeric/body
   fields.
+- `appearance.male_only_extra_description` and
+  `appearance.non_male_only_extra_description` are optional and narrow. Missing
+  or `null` means no additional prompt text. Use them only for an important
+  visual feature that genuinely differs between presentations and no other
+  field owns, primarily optional male facial hair. Never use them for a general
+  description, breasts, pecs/chest, genitals, or other structured anatomy. Do
+  not put clothing, pose, scene state, personality, sexual behavior, or
+  instructions in them. The engine selects only the field matching the active
+  presentation.
 - Set `appearance.nonhuman_lower_body` to true only when ordinary humanoid hips,
   buttocks, thighs/calves, and legs are replaced by a distinct nonhuman lower
   body. Keep all eleven numeric fields structurally present, but suppress
