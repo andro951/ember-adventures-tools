@@ -11,7 +11,7 @@ This skill is for only character information. Do not mention anything that is on
 
 ## Version and Update Check
 
-Current skill version: `1.0.31`.
+Current skill version: `1.0.33`.
 
 Before using this skill, compare the installed version with the authoritative
 GitHub version file. If the installed version is older, ask for permission to
@@ -515,13 +515,13 @@ Do not store `kink_tags` on characters inside story files; embedded story charac
 
 - `appearance.penis_size`: Required integer from 0 to 20 on every character regardless of gender in case runtime adaptation changes the presentation to male or futanari. Do not set it to 0 merely because the canonical presentation is non-male. Runtime ignores it unless the active presentation is male or futanari. Use the locked mapping in [references/body-scales-0-20.md](references/body-scales-0-20.md).
 
-- `role`: Extremely short role, specialty, title, or class description. This field is player-facing and more like a label than a description. It has very limited space to be displayed in game. General durable description usable as a title, rank, position, profession, specialty, or group/story function. Examples: `"Guild Registrar"`, `"healer"`, `"Queen"`, `"Noble"`, `"Duke"`, `"Assassin"`.
+- `role`: Required short occupational/social label, title, rank, or specialty. Maximum 40 characters, including spaces and punctuation. Do not put responsibilities or background here; put those in `starting_known_facts`. Examples: `"Guild Registrar"`, `"Healer"`, `"Queen"`, `"Assassin"`.
 
 - `personality_description`: Durable personality and behavior summary. Describe how the character tends to think, act, flirt, fight, negotiate, or handle pressure. This is meant as permanent guidance for the player's personality, not temporary mood or state. This field is used by the ai to determine how this character acts and speaks.
 
 - `speech_style`: Durable description of how the character speaks. Describe how the character usually speaks. Do not use this for TTS/voice metadata. This field is used by the ai to determine how this character speaks.
 
-- `boldness`: Immutable 1-10 integer describing how readily and directly the character initiates romantic or sexual interest. Numeric `0` and values outside `1-10` are invalid and normalize to the neutral default `5`. A custom string is also valid when the character's boldness does not match one of the provided boldness levels. However, in general, you should try to use the numbers to allow players to increment/decrement the boldness easily. If using a string, do not reference the numeric scale. The numbered values are converted to their associated strings. The AI is not aware of the number to string mapppings. Use the same scale for every gender; gender adaptation never changes personality.
+- `boldness`: Required integer from 1 through 10 or a nonempty custom behavioral description. Numeric values must be whole numbers in range; invalid authored values are rejected, not defaulted. Prefer the numeric scale when it fits: profile boldness adjustments apply to numbers. Custom descriptions are used directly and remain unchanged by profile adjustments. Do not include numeric score annotations in custom text or encode a number as a string. Use the same scale for every gender; gender adaptation never changes personality.
   - `1`: very reserved; almost never initiates romance or intimacy and waits for unmistakable mutual interest.
   - `2`: reserved; expresses interest subtly and waits for clear encouragement before initiating.
   - `3`: cautious; may initiate small compliments or mild flirting, then pauses to judge the response.
@@ -670,7 +670,8 @@ information that the prompt builder will already include elsewhere.
 
 - Legacy appearance fields `muscular`, `shoulders`, `stomach`, `hips`, `waist`, `legs`, and `arms` are invalid. Clothing slots with names such as `shoulders` and `waist` are separate garment keys and remain valid.
 
-- `skin_color`, `eye_color`, `hair_color`, `hair_length`, `hair_type`: Persistent visual details. Use concrete visual wording. Do not write personality or clothing.
+- `skin_color`, `eye_color`, `hair_color`, `hair_length`, `hair_type`: Permanent, unconditional visual traits only. `hair_type` describes inherent hair type/texture (such as straight, wavy, curly, or tightly coiled), never styling. Keep hair color and length in their own fields. Braids, ponytails, buns, updos, partings, and other styling belong in the outfit's `hair_accessory` slot, not in permanent appearance or `extra_description`. Do not use conditional appearance wording such as "usually," "while working," or "when traveling"; define the relevant outfit instead.
+- `skin_color`: Bare color phrase only, for example `"warm medium-deep brown"`. Do not include the word "skin," sentences, cultural context, conditional wording, or unrelated appearance details.
 
 - `extra_description`: Optional remainder field for concrete, durable visual traits that do not fit another appearance field. Examples include `"scar across left collarbone"`, `"transparent mint-green slime body"`, or `"filed canines"`, `"butterfly tatoo on right cheek"`. It is not a general physical-description field. Do not include temporary dirt, arousal, clothing damage, scene effects, personality, mood, pose, health, role, backstory, or explanations of how the character acquired a body type. Do not repeat details already represented by the other appearance fields. For details that are only on the lower body, do not include them here such as `"tatoo on right ancle"`. All lower body specific descriptions belong in `extra_description_lower_body`. Use `""` when there is no distinct extra description needed.
 
@@ -737,6 +738,7 @@ Outfits are immutable clothing presets stored on the character definition. When 
 - `outfits[].clothing`: Object using EmberAdventures clothing slots. Values are item descriptions or `null`. This object should describe the full preset as clearly as possible. Use precise garments/equipment, not broad vibes. Good examples: `"linen travel shirt"`, `"black leather corset"`, `"steel breastplate"`, `"knee-high buckle boots"`, `"silver serpent hairpin"`. Bad examples: `"sexy clothes"`, `"normal outfit"`, `"varies"`, `"whatever she wants"`, `"revealing but tasteful"`, `"armor or maid dress"`.
 
 - Clothing slot keys should be stable equipment/body-wear slots. Canonical slots are `hat`, `hair_accessory`, `face`, `ears`, `neck`, `shoulders`, `bra`, `undershirt`, `shirt`, `over_shirt`, `coat`, `back`, `hands`, `right_wrist`, `left_wrist`, `right_fingers`, `left_fingers`, `waist`, `belt_accessory`, `underwear`, `pants`, `skirt`, `legwear`, `socks`, `feet`, and `other_accessory`. Use only slots that make sense. Do not author the legacy `hair` alias; use `hair_accessory`. A missing slot or `null` means nothing is defined for that outfit slot.
+- `hair_accessory` is the head/hair presentation slot for hairstyles as well as hair accessories. It does not have to describe a clothing item or physical accessory: `"hair gathered into a loose braid"` is valid. Describe the hairstyle for this outfit unconditionally. Use `hat` for headwear; do not invent a `head`, `hair`, or `hairstyle` field.
 
 - Every outfit must describe the complete set of clothing the character actually wears in that preset, including ordinary inner layers such as underwear, a bra, undershirt, socks, or other garments when appropriate. Do not define only the most visible outer garment. The runtime can remove clothing one piece at a time, so omitted inner layers can make a character become accidentally naked after removing one outer layer. Deliberately minimal, nude, or underwear-only outfits are valid only when that is the actual intended preset.
 
