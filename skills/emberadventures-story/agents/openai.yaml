@@ -1,4 +1,0 @@
-interface:
-  display_name: "EmberAdventures Story"
-  short_description: "Create and validate normal story templates"
-  default_prompt: "Use $emberadventures-story to create, revise, migrate, or validate a normal EmberAdventures story template."
